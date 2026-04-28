@@ -143,7 +143,7 @@ body{
   margin-top: 4px;
 }
 
-.ltr{ direction:ltr; unicode-bidi: plaintext; }
+.ltr{ direction:ltr; unicode-bidi: isolate; display:inline-block; }
 
 .bigPrompt{
   font-size: 54px;
@@ -203,6 +203,71 @@ body{
   100%{ transform: scale(1); }
 }
 
+/* Reusable celebration: balloons */
+.balloonOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: auto;
+}
+.balloonOverlay.hidden{
+  opacity: 0;
+  transition: opacity 500ms;
+}
+.balloonContainer{
+  position:absolute;
+  inset: 0;
+  height: 100vh;
+  padding: 1em;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.balloon{
+  height: 110px;
+  width: 92px;
+  border-radius: 75% 75% 70% 70%;
+  position: absolute;
+  bottom: -140px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.balloon:before{
+  content:"";
+  height: 60px;
+  width: 2px;
+  background-color: rgba(255, 246, 158, .9);
+  display:block;
+  position:absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  margin: auto;
+  border-radius: 2px;
+}
+.balloon:after{
+  content:"▲";
+  text-align:center;
+  display:block;
+  position:absolute;
+  color: inherit;
+  top: 103px;
+  left: 0;
+  right: 0;
+  margin:auto;
+  font-size: 14px;
+}
+.balloon.pop{
+  animation: pop .18s ease-out both !important;
+}
+@keyframes pop{
+  0%{ transform: scale(1); opacity: 1; }
+  100%{ transform: scale(1.18); opacity: 0; }
+}
+@keyframes floatUp{
+  from{ transform: translateY(0); opacity: 1; }
+  to{ transform: translateY(calc(-100vh - 260px)); opacity: 0; }
+}
+
 @keyframes wrongWiggle{
   0%{ transform: translateX(0); }
   15%{ transform: translateX(-6px) rotate(-0.5deg); }
@@ -241,3 +306,47 @@ body{
 }
 .kpi .k{ color: var(--muted); font-size: 12px; font-weight: 800; }
 .kpi .v{ font-size: 18px; font-weight: 900; }
+
+/* Letters config layout (flex-based, responsive) */
+.letterGrid{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content:flex-start;
+}
+.letterCell{
+  flex: 1 0 72px; /* wraps naturally across sizes */
+  max-width: 110px;
+}
+@media (max-width: 520px){
+  .letterCell{ flex-basis: 68px; }
+}
+.letterCell{
+  position:relative;
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(31,36,48,.10);
+  border-radius: 18px;
+  padding: 10px 10px 12px;
+  min-height: 74px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+}
+.letterCell input[type="checkbox"]{
+  width: 22px;
+  height: 22px;
+}
+.letterGlyph{
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+.letterMastery{
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--muted);
+}

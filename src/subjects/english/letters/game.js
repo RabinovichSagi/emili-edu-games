@@ -2,6 +2,7 @@ import { el, toast, clear } from "../../../ui/dom.js";
 import { nowMs } from "../../../core/time.js";
 import { isDue } from "../../../core/sr.js";
 import { playCached, playOneShot, preloadAudio } from "../../../core/audio.js";
+import { showBalloonCelebration } from "../../../ui/celebrations/balloons.js";
 
 const GAME_ID = "letters";
 const CREATED_AT = 20260428;
@@ -131,7 +132,7 @@ export const EnglishLettersGame = {
 
   render({ mount, store }) {
     const state = {
-      phase: "menu", // menu | play | done | report
+      phase: "menu", // menu | play | done | report | settings
       cfg: normalizeConfig(store.getGameConfig(GAME_ID, defaultConfig())),
       round: 0,
       score: 0,
@@ -142,6 +143,7 @@ export const EnglishLettersGame = {
       narrowingRounds: 0,
       current: null,
       feedback: null,
+      celebrated: false,
     };
     // Persist normalized config so older saved configs get upgraded.
     store.setGameConfig(GAME_ID, { enabledModes: state.cfg.enabledModes });
@@ -157,12 +159,18 @@ export const EnglishLettersGame = {
       if (state.phase === "menu") mount.append(renderMenu());
       else if (state.phase === "play") mount.append(renderPlay());
       else if (state.phase === "report") mount.append(renderReport());
+      else if (state.phase === "settings") mount.append(renderSettings());
       else mount.append(renderDone());
     }
 
     function saveCfg(patch) {
       state.cfg = { ...state.cfg, ...patch };
       store.setGameConfig(GAME_ID, patch);
+      rerender();
+    }
+
+    function setCfgDraft(patch) {
+      state.cfg = { ...state.cfg, ...patch };
       rerender();
     }
 
@@ -243,6 +251,7 @@ export const EnglishLettersGame = {
       const mastery = computeMastery(profile, state.cfg);
       store.setGameMastery(GAME_ID, mastery);
       state.phase = "done";
+      state.celebrated = false;
       rerender();
     }
 
@@ -275,33 +284,51 @@ export const EnglishLettersGame = {
           ]),
           el("div", { class: "row" }, [
             el("button", { class: "btn secondary", onClick: () => ((state.phase = "report"), rerender()) }, ["דוח 📊"]),
+            el("button", { class: "btn secondary", onClick: () => ((state.phase = "settings"), rerender()) }, ["⚙️"]),
             el("button", { class: "btn", onClick: startSession }, ["התחל/י"]),
+          ]),
+        ]),
+      ]);
+    }
+
+    function renderSettings() {
+      return el("div", { class: "list" }, [
+        el("div", { class: "itemRow" }, [
+          el("div", {}, [el("div", { class: "title", text: "הגדרות ⚙️" }), el("div", { class: "sub", text: "שמרו כדי לחזור למשחק" })]),
+          el("div", { class: "row" }, [
+            el("button", { class: "btn secondary", onClick: () => ((state.phase = "menu"), rerender()) }, ["ביטול"]),
+            el("button", { class: "btn", onClick: () => (store.setGameConfig(GAME_ID, state.cfg), (state.phase = "menu"), rerender()) }, ["שמירה"]),
+          ]),
+        ]),
+        el("div", { class: "card" }, [
+          el("div", { class: "row" }, [
+            labelSelect(
+              "רמת קושי",
+              state.cfg.difficulty,
+              [
+                ["easy", "קל 😌"],
+                ["normal", "רגיל 🙂"],
+                ["hard", "קשה 💪"],
+              ],
+              (v) => setCfgDraft({ difficulty: v })
+            ),
+            labelSelect("מספר סבבים", String(state.cfg.roundsPerSession), [["6", "6"], ["10", "10"], ["14", "14"]], (v) =>
+              setCfgDraft({ roundsPerSession: Number(v) })
+            ),
+            labelToggle("צליל", state.cfg.audioEnabled, (v) => setCfgDraft({ audioEnabled: v })),
           ]),
         ]),
         el("div", { class: "card" }, [
           el("div", { class: "itemRow" }, [
-            el("div", {}, [el("div", { class: "title", text: "הגדרות" }), el("div", { class: "sub", text: "אפשר לשנות בכל רגע" })]),
+            el("div", {}, [el("div", { class: "title", text: "מצבי תרגול" }), el("div", { class: "sub", text: "אפשר להדליק/לכבות" })]),
           ]),
-          el("div", { class: "row", style: "margin-top:10px" }, [
-            labelSelect("רמת קושי", state.cfg.difficulty, [
-              ["easy", "קל 😌"],
-              ["normal", "רגיל 🙂"],
-              ["hard", "קשה 💪"],
-            ], (v) => saveCfg({ difficulty: v })),
-            labelSelect("מספר סבבים", String(state.cfg.roundsPerSession), [["6", "6"], ["10", "10"], ["14", "14"]], (v) =>
-              saveCfg({ roundsPerSession: Number(v) })
-            ),
-            labelToggle("צליל", state.cfg.audioEnabled, (v) => saveCfg({ audioEnabled: v })),
-          ]),
-          el("div", { class: "card", style: "margin-top:12px" }, [
-            el("div", { class: "itemRow" }, [
-              el("div", {}, [el("div", { class: "title", text: "מצבי תרגול" }), el("div", { class: "sub", text: "אפשר להדליק/לכבות" })]),
-            ]),
-            el(
-              "div",
-              { class: "row", style: "margin-top:10px" },
-              MODES.map((m) =>
-                el("button", {
+          el(
+            "div",
+            { class: "row", style: "margin-top:10px" },
+            MODES.map((m) =>
+              el(
+                "button",
+                {
                   class: `btn secondary`,
                   onClick: () => {
                     const enabled = new Set(state.cfg.enabledModes);
@@ -309,24 +336,25 @@ export const EnglishLettersGame = {
                     else enabled.add(m.id);
                     const arr = [...enabled];
                     if (!arr.length) return toast("צריך לפחות מצב אחד 🙂");
-                    saveCfg({ enabledModes: arr });
+                    setCfgDraft({ enabledModes: arr });
                   },
-                }, [state.cfg.enabledModes.includes(m.id) ? `✅ ${m.titleHe}` : `⬜ ${m.titleHe}`])
+                },
+                [state.cfg.enabledModes.includes(m.id) ? `✅ ${m.titleHe}` : `⬜ ${m.titleHe}`]
               )
-            ),
+            )
+          ),
+        ]),
+        el("div", { class: "card" }, [
+          el("div", { class: "itemRow" }, [
+            el("div", {}, [el("div", { class: "title", text: "אותיות לתרגול" }), el("div", { class: "sub", text: "סמנו אילו אותיות לתרגל" })]),
+          ]),
+          el("div", { class: "row", style: "margin-top:10px" }, [
+            el("button", { class: "btn secondary", onClick: () => setCfgDraft({ enabledLetters: alphabet() }) }, ["בחר/י הכל"]),
+            el("button", { class: "btn secondary", onClick: () => setCfgDraft({ enabledLetters: [] }) }, ["נקה/י הכל"]),
           ]),
           el("div", { class: "card", style: "margin-top:12px" }, [
-            el("div", { class: "itemRow" }, [
-              el("div", {}, [el("div", { class: "title", text: "אותיות לתרגול" }), el("div", { class: "sub", text: "בחרו סט אותיות להתחלה" })]),
-            ]),
-            el("div", { class: "row", style: "margin-top:10px" }, [
-              el("button", { class: "btn secondary", onClick: () => saveCfg({ enabledLetters: alphabet() }) }, ["בחר/י הכל"]),
-              el("button", { class: "btn secondary", onClick: () => saveCfg({ enabledLetters: [] }) }, ["נקה/י הכל"]),
-            ]),
-            el("div", { class: "card", style: "margin-top:12px" }, [
-              el("div", { class: "sub", text: "סמנו אילו אותיות לתרגל (ליד כל אות: מאסטרי)" }),
-              renderLetterChecklist(store.getProfile(), state.cfg, saveCfg),
-            ]),
+            el("div", { class: "sub", text: "ליד כל אות: מאסטרי" }),
+            renderLetterChecklist(store.getProfile(), state.cfg, (patch) => setCfgDraft(patch)),
           ]),
         ]),
       ]);
@@ -525,6 +553,13 @@ export const EnglishLettersGame = {
     function renderDone() {
       const profile = store.getProfile();
       const mastery = profile.gameStats?.[GAME_ID]?.mastery ?? 0;
+
+      if (!state.celebrated) {
+        state.celebrated = true;
+        // Reusable end-of-session celebration.
+        showBalloonCelebration({ count: 30, maxSeconds: 10 });
+      }
+
       return el("div", { class: "list" }, [
         el("div", { class: "itemRow" }, [
           el("div", {}, [
@@ -626,44 +661,37 @@ function renderVoiceOption(letterUpper, onSelect) {
 function renderLetterChecklist(profile, cfg, saveCfg) {
   const enabled = new Set(cfg.enabledLetters);
   const letters = alphabet();
-  const grid = el("div", { style: "display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:8px; margin-top:10px;" });
+  const grid = el("div", { class: "letterGrid" });
   for (const L of letters) {
     const mastery = computeLetterMastery(profile, L);
     const checked = enabled.has(L);
-    const cell = el(
-      "label",
-      {
-        class: "pill",
-        style: "justify-content:space-between; gap:8px; cursor:pointer; user-select:none;",
-      },
-      [
-        el("span", { class: "ltr", dir: "ltr", text: L }),
-        el("span", { text: `${mastery}%` }),
-        el("input", {
-          type: "checkbox",
-          checked: checked ? true : null,
-          onChange: (e) => {
-            const next = new Set(cfg.enabledLetters);
-            if (e.target.checked) next.add(L);
-            else next.delete(L);
-            saveCfg({ enabledLetters: [...next] });
-          },
-        }),
-      ]
-    );
+    const cell = el("label", { class: "letterCell", title: `מאסטרי ${mastery}%` }, [
+      el("span", { class: "ltr letterGlyph", dir: "ltr", text: L }),
+      el("span", { class: "letterMastery", text: `${mastery}%` }),
+      el("input", {
+        type: "checkbox",
+        checked: checked ? true : null,
+        onChange: (e) => {
+          const next = new Set(cfg.enabledLetters);
+          if (e.target.checked) next.add(L);
+          else next.delete(L);
+          saveCfg({ enabledLetters: [...next] });
+        },
+      }),
+    ]);
     grid.append(cell);
   }
   return grid;
 }
 
 function renderLetterMasteryGrid(profile, letters) {
-  const grid = el("div", { style: "display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:8px; margin-top:10px;" });
+  const grid = el("div", { class: "letterGrid" });
   for (const L of letters) {
     const mastery = computeLetterMastery(profile, L);
     grid.append(
-      el("div", { class: "pill", style: "justify-content:space-between; gap:10px;" }, [
-        el("span", { class: "ltr", dir: "ltr", text: L }),
-        el("span", { text: `${mastery}%` }),
+      el("div", { class: "letterCell" }, [
+        el("span", { class: "ltr letterGlyph", dir: "ltr", text: L }),
+        el("span", { class: "letterMastery", text: `${mastery}%` }),
       ])
     );
   }

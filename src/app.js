@@ -8,7 +8,9 @@ const router = createRouter();
 
 function resolveScreen(route) {
   if (route.screen === "reports") return { name: "reports" };
-  if (route.subject && route.game) return { name: "game", subject: route.subject, game: route.game };
+  if (route.subject && route.game)
+    return { name: "game", subject: route.subject, game: route.game, view: route.view || "" };
+  if (route.subject) return { name: "subject", subject: route.subject };
   return { name: "home" };
 }
 
@@ -20,4 +22,3 @@ function onRouteChange() {
 
 router.onChange(onRouteChange);
 onRouteChange();
-

@@ -8,6 +8,7 @@ export function createRouter() {
       screen: params.get("screen") || "",
       subject: params.get("subject") || "",
       game: params.get("game") || "",
+      view: params.get("view") || "",
     };
   }
 
@@ -46,4 +47,3 @@ export function createRouter() {
 
   return { read, replace, push, onChange };
 }
-

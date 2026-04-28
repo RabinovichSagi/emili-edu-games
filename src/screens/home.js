@@ -10,24 +10,15 @@ export function renderHome({ mount, router }) {
         ]),
       ]),
       el("div", { class: "grid" }, [
-        el("div", { class: "card" }, [
+        el("div", { class: "card", style: "cursor:pointer;", onClick: () => router.push({ subject: "english" }), role: "button", tabindex: "0" }, [
           el("div", { class: "itemRow" }, [
             el("div", {}, [
               el("div", { class: "title", text: "אנגלית" }),
               el("div", { class: "sub", text: "אותיות, קריאה, ועוד" }),
             ]),
-            el(
-              "button",
-              {
-                class: "btn",
-                onClick: () => router.push({ subject: "english", game: "letters" }),
-              },
-              ["לשחק"]
-            ),
           ]),
         ]),
       ]),
     ])
   );
 }
-

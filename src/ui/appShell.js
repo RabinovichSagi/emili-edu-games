@@ -31,11 +31,7 @@ export function renderApp({ root, store, router, screen }) {
   ]);
 
   const content = el("div", { class: "card" });
-  const footer = el("div", { class: "pill", style: "justify-content:space-between; width:100%" }, [
-    el("span", { text: "Otsarot dev" }),
-    el("span", { class: "ltr", dir: "ltr", text: `screen=${screen.name}` }),
-  ]);
-  root.append(topbar, content, footer);
+  root.append(topbar, content);
 
   const render = Screens[screen.name];
   if (!render) {
