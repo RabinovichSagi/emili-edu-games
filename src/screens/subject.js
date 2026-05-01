@@ -1,4 +1,5 @@
 import { el } from "../ui/dom.js";
+import { listEnglishGamesNewestFirst } from "../subjects/english/registry.js";
 
 export function renderSubject({ mount, router, screen }) {
   if (screen.subject !== "english") {
@@ -6,20 +7,26 @@ export function renderSubject({ mount, router, screen }) {
     return;
   }
 
-  const card = el("div", {
-    class: "card",
-    style: "cursor:pointer; width:100%;",
-    onClick: () => router.push({ subject: "english", game: "letters" }),
-    role: "button",
-    tabindex: "0",
-  }, [
-    el("div", { class: "itemRow" }, [
-      el("div", {}, [
-        el("div", { class: "title", text: "אותיות באנגלית" }),
-        el("div", { class: "sub", text: "זיהוי אותיות, התאמת גדולות/קטנות, וצלילים 🔊" }),
-      ]),
-    ]),
-  ]);
+  const cards = listEnglishGamesNewestFirst().map(({ id, game }) =>
+    el(
+      "div",
+      {
+        class: "card",
+        style: "cursor:pointer; width:100%;",
+        onClick: () => router.push({ subject: "english", game: id }),
+        role: "button",
+        tabindex: "0",
+      },
+      [
+        el("div", { class: "itemRow" }, [
+          el("div", {}, [
+            el("div", { class: "title", text: game.titleHe }),
+            el("div", { class: "sub", text: game.subtitleHe || "בואו נתרגל 🙂" }),
+          ]),
+        ]),
+      ]
+    )
+  );
 
   mount.append(
     el("div", { class: "list" }, [
@@ -30,7 +37,7 @@ export function renderSubject({ mount, router, screen }) {
         ]),
         el("button", { class: "btn secondary", onClick: () => router.push({ screen: "home" }) }, ["חזרה"]),
       ]),
-      card,
+      ...cards,
     ])
   );
 }

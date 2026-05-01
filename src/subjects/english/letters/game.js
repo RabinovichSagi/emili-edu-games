@@ -3,6 +3,7 @@ import { nowMs } from "../../../core/time.js";
 import { isDue } from "../../../core/sr.js";
 import { playCached, playOneShot, preloadAudio } from "../../../core/audio.js";
 import { showBalloonCelebration } from "../../../ui/celebrations/balloons.js";
+import { WORDS_GRADE3 } from "../wordBank.js";
 
 const GAME_ID = "letters";
 const CREATED_AT = 20260428;
@@ -14,6 +15,7 @@ const MODES = [
   { id: "upper_to_lower", titleHe: "אות גדולה → אות קטנה" },
   { id: "lower_to_voice", titleHe: "אות קטנה → צליל" },
   { id: "upper_to_voice", titleHe: "אות גדולה → צליל" },
+  { id: "word_highlight_case", titleHe: "מילה עם אות מודגשת → התאמת אות" },
 ];
 
 function alphabet() {
@@ -65,6 +67,29 @@ function shuffle(a) {
 function oppositeCase(letter) {
   if (letter.toUpperCase() === letter) return letter.toLowerCase();
   return letter.toUpperCase();
+}
+
+function isAlphaLetter(ch) {
+  const c = String(ch || "").slice(0, 1);
+  return c >= "A" && c <= "Z" ? true : c >= "a" && c <= "z";
+}
+
+function pickWordForLetter(letterUpper) {
+  const L = String(letterUpper || "").toUpperCase().slice(0, 1);
+  const candidates = WORDS_GRADE3.filter((w) => String(w).toUpperCase().includes(L));
+  if (candidates.length) return pickRandom(candidates);
+  // Fallback: should be rare; still keep the game playable.
+  return pickRandom(WORDS_GRADE3);
+}
+
+function findAllLetterIndices(word, letterUpper) {
+  const w = String(word || "");
+  const L = String(letterUpper || "").toUpperCase().slice(0, 1);
+  const idxs = [];
+  for (let i = 0; i < w.length; i++) {
+    if (String(w[i]).toUpperCase() === L) idxs.push(i);
+  }
+  return idxs;
 }
 
 function speakEn(text) {
@@ -128,6 +153,7 @@ function computeLetterMastery(profile, letterUpper) {
 export const EnglishLettersGame = {
   id: GAME_ID,
   titleHe: "אותיות באנגלית",
+  subtitleHe: "זיהוי אותיות, התאמת גדולות/קטנות, וצלילים 🔊",
   createdAt: CREATED_AT,
 
   render({ mount, store }) {
@@ -186,8 +212,35 @@ export const EnglishLettersGame = {
         if (modes.includes("upper_to_lower")) pool.push({ mode: "upper_to_lower", letter: L, prompt: L, answer: L.toLowerCase(), variant: "u2l" });
         if (modes.includes("lower_to_voice")) pool.push({ mode: "lower_to_voice", letter: L, prompt: L.toLowerCase(), answer: L, variant: "l2v" });
         if (modes.includes("upper_to_voice")) pool.push({ mode: "upper_to_voice", letter: L, prompt: L, answer: L, variant: "u2v" });
+        if (modes.includes("word_highlight_case"))
+          pool.push({
+            mode: "word_highlight_case",
+            letter: L,
+            prompt: null,
+            answer: null,
+            variant: "wh",
+          });
       }
       return pool;
+    }
+
+    function hydrateWordHighlightItem(baseItem) {
+      const letterUpper = String(baseItem.letter).toUpperCase();
+      const word = pickWordForLetter(letterUpper);
+      const indices = findAllLetterIndices(word, letterUpper);
+      const highlightIndex = indices.length ? pickRandom(indices) : 0;
+      // Teacher asked for both: words shown ALL upper and ALL lower.
+      const showLower = Math.random() < 0.5;
+      const displayWord = showLower ? word.toLowerCase() : word.toUpperCase();
+      const highlightedChar = displayWord[highlightIndex] || (showLower ? letterUpper.toLowerCase() : letterUpper);
+      const want = oppositeCase(highlightedChar);
+      const wantCase = want === want.toUpperCase() ? "upper" : "lower";
+      return {
+        ...baseItem,
+        prompt: { type: "word_highlight", word: displayWord, highlightIndex, showLower },
+        answer: want,
+        wantCase,
+      };
     }
 
     function pickNextItem() {
@@ -211,7 +264,9 @@ export const EnglishLettersGame = {
         .sort((a, b) => a.lastAt - b.lastAt || a.attempts - b.attempts);
       // Take from the oldest ~1/3 to keep variety.
       const slice = sorted.slice(0, Math.max(4, Math.ceil(sorted.length / 3)));
-      return pickRandom(slice).it;
+      const chosen = pickRandom(slice).it;
+      if (chosen.mode === "word_highlight_case") return hydrateWordHighlightItem(chosen);
+      return chosen;
     }
 
     function startSession() {
@@ -392,6 +447,22 @@ export const EnglishLettersGame = {
     }
 
     function renderPrompt(it) {
+      if (it.mode === "word_highlight_case") {
+        const word = it.prompt?.word || "";
+        const highlightIndex = Number.isFinite(it.prompt?.highlightIndex) ? it.prompt.highlightIndex : 0;
+        const chars = [...String(word)];
+        const pieces = chars.map((ch, i) => {
+          if (i === highlightIndex && isAlphaLetter(ch)) {
+            return el("span", { style: "color:#e11d48; font-weight:900;" }, [ch]);
+          }
+          return el("span", {}, [ch]);
+        });
+        const instruction = it.wantCase === "lower" ? "בחרי את האות הקטנה שמתאימה לאות האדומה" : "בחרי את האות הגדולה שמתאימה לאות האדומה";
+        return el("div", { class: "bigPrompt" }, [
+          el("div", { class: "ltr", dir: "ltr", style: "font-size:40px; letter-spacing:1px;" }, pieces),
+          el("small", { text: instruction }),
+        ]);
+      }
       if (it.mode === "voice_to_lower" || it.mode === "voice_to_upper") {
         return el("div", { class: "bigPrompt" }, [
           el("div", { text: "מה שמעת? 👂" }),
@@ -439,6 +510,32 @@ export const EnglishLettersGame = {
           "div",
           { class: "choices" },
           options.map((optUpper) => renderVoiceOption(optUpper, (e) => onChooseVoice(optUpper, e)))
+        );
+      }
+
+      if (it.mode === "word_highlight_case") {
+        // Teacher asked for 4 options (fixed).
+        const count = 4;
+        const letters = state.cfg.enabledLetters;
+        const correct = String(it.answer || "");
+        const correctUpper = correct.toUpperCase();
+        const otherLetters = shuffle(letters.filter((x) => x.toUpperCase() !== correctUpper)).slice(0, Math.max(0, count - 1));
+        const optionLettersUpper = shuffle([correctUpper, ...otherLetters.map((x) => x.toUpperCase())]);
+        const options = optionLettersUpper.map((L) => (it.wantCase === "lower" ? L.toLowerCase() : L.toUpperCase()));
+        return el(
+          "div",
+          { class: "choices" },
+          options.map((opt) =>
+            el(
+              "button",
+              {
+                class: "choiceBtn ltr",
+                onClick: (e) => onChoose(opt, e),
+                dir: "ltr",
+              },
+              [opt]
+            )
+          )
         );
       }
 

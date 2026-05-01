@@ -1,9 +1,9 @@
 import { el } from "../ui/dom.js";
-import { EnglishLettersGame } from "../subjects/english/letters/game.js";
+import { EnglishGames } from "../subjects/english/registry.js";
 
 const registry = {
   english: {
-    letters: EnglishLettersGame,
+    ...EnglishGames,
   },
 };
 
@@ -26,4 +26,3 @@ export function renderGame({ mount, store, router, screen }) {
   }
   game.render({ mount, store, router });
 }
-
