@@ -1,7 +1,9 @@
 import { MathDistributiveLawGame } from "./distributiveLaw/game.js";
+import { MathProblemSolvingGame } from "./problemSolving/game.js";
 
 export const MathGames = {
   distributive_law: MathDistributiveLawGame,
+  problem_solving: MathProblemSolvingGame,
 };
 
 export function listMathGamesNewestFirst() {
