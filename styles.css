@@ -285,7 +285,10 @@ body{
   bottom: 16px;
   background: rgba(31,36,48,.92);
   color: white;
-  padding: 10px 14px;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
   border-radius: 14px;
   font-weight: 800;
   max-width: min(680px, calc(100% - 24px));
@@ -296,8 +299,24 @@ body{
 }
 .toast.on{
   opacity: 1;
+  pointer-events:auto;
   transform: translateX(-50%) translateY(-2px);
 }
+.toastText{
+  flex: 1;
+}
+.toastClose{
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  color: white;
+  font-size: 24px;
+  line-height: 1;
+  cursor:pointer;
+}
+.toastClose:active{ transform: translateY(1px); }
 
 .kpi{
   display:flex;
@@ -427,6 +446,7 @@ body{
 }
 .mathAreaGrid{
   --cell: clamp(9px, calc((100vw - 92px) / var(--cols)), 26px);
+  --split-gap: clamp(12px, 3.6vw, 30px);
   direction:ltr;
   display:grid;
   grid-template-columns: repeat(var(--cols), var(--cell));
@@ -440,11 +460,12 @@ body{
   border: 1px solid rgba(31,36,48,.10);
   max-width: 100%;
   overflow:auto hidden;
-  transition: gap .24s ease, transform .24s ease;
+  transition: gap .24s ease, transform .24s ease, padding .24s ease;
   touch-action: manipulation;
 }
 .mathAreaGrid.separated{
   gap: 3px;
+  padding-inline-end: calc(10px + var(--split-gap));
   transform: scale(.985);
 }
 .mathAreaGrid.recombined,
@@ -467,11 +488,13 @@ body{
   font-size: clamp(7px, calc(var(--cell) * .72), 17px);
   line-height: 1;
   cursor:pointer;
+  transition: transform .24s ease, background .16s ease, box-shadow .16s ease;
 }
 .mathCell.left{ background: rgba(124,108,255,.18); }
 .mathCell.right{ background: rgba(255,126,182,.18); }
 .mathCell.tensGuide{ box-shadow: inset -2px 0 0 rgba(31,36,48,.18); }
 .mathCell.splitEdge{ box-shadow: inset -4px 0 0 rgba(255,176,32,.82); }
+.mathCell.splitRight{ transform: translateX(var(--split-gap)); }
 .mathHint{
   text-align:center;
   color: var(--muted);
@@ -492,6 +515,7 @@ body{
   border: 1px solid rgba(31,36,48,.10);
   background: rgba(255,255,255,.78);
 }
+.mathSplitLabels .neutral{ color: var(--ink); background: rgba(255,255,255,.78); }
 .mathSplitLabels .good{ color: #167a44; background: rgba(46,204,113,.14); }
 .mathSplitLabels .bad{ color: #ad2740; background: rgba(255,92,122,.14); }
 
@@ -528,14 +552,20 @@ body{
 }
 .mathBlank.filled{
   border-style: solid;
+  border-color: rgba(124,108,255,.28);
+  color: var(--ink);
+  background: rgba(255,255,255,.92);
+}
+.mathBlank.filled.checked{
   border-color: rgba(46,204,113,.42);
   color: #167a44;
   background: rgba(46,204,113,.12);
   animation: correctPop .18s ease-out both;
 }
 .mathBlank.bad{
-  border-color: rgba(255,92,122,.60);
+  border-color: rgba(255,92,122,.72);
   color: var(--bad);
+  background: rgba(255,92,122,.12);
   animation: wrongWiggle .42s ease-in-out both;
 }
 .mathCards{
@@ -559,6 +589,10 @@ body{
 }
 .mathNumberCard:disabled{
   opacity:.45;
+  cursor:not-allowed;
+}
+.mathEquationCard .btn[disabled]{
+  opacity:.55;
   cursor:not-allowed;
 }
 .mathNumberCard:active{ transform: translateY(1px); }

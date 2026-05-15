@@ -20,15 +20,20 @@ export function clear(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
 
-export function toast(text, ms = 1400) {
+export function toast(text, ms = 6000) {
   let t = document.getElementById("toast");
   if (!t) {
     t = el("div", { id: "toast", class: "toast", role: "status" });
     document.body.append(t);
   }
-  t.textContent = text;
+
+  clear(t);
+  t.append(
+    el("span", { class: "toastText", text }),
+    el("button", { class: "toastClose", type: "button", "aria-label": "סגירת הודעה", onClick: () => t.classList.remove("on") }, ["×"])
+  );
   t.classList.add("on");
   window.clearTimeout(toast._timer);
-  toast._timer = window.setTimeout(() => t.classList.remove("on"), ms);
+  toast._timer = window.setTimeout(() => t.classList.remove("on"), Math.max(ms, 4500));
 }
 

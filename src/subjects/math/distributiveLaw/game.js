@@ -47,6 +47,15 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function shuffle(arr) {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 function itemKey({ a, b, tens, ones }) {
   return `${a}|${b}|${tens}+${ones}`;
 }
@@ -114,10 +123,73 @@ function equationBlanks(it) {
 }
 
 function uniqueNumberCards(it) {
-  const rightDistractors = [it.total + it.a, Math.max(0, it.total - it.a), it.tens + it.ones, it.b];
-  return [...new Set([...equationBlanks(it).map((x) => x.value), ...rightDistractors])]
+  const correct = equationBlanks(it).map((x) => x.value);
+  const distractors = [
+    it.total + it.a,
+    Math.max(0, it.total - it.a),
+    it.total + it.ones,
+    Math.max(0, it.total - it.ones),
+    it.leftProduct + it.rightProduct + it.a,
+    Math.max(0, it.leftProduct - it.rightProduct),
+    it.leftProduct + it.ones,
+    Math.max(0, it.leftProduct - it.ones),
+    it.rightProduct + it.tens,
+    Math.max(0, it.rightProduct - it.a),
+    it.tens + it.ones,
+    it.tens - it.ones,
+    it.b,
+    it.b + it.a,
+    Math.max(0, it.b - it.a),
+    it.a + it.tens,
+    it.a + it.ones,
+  ];
+  return [...new Set([...correct, ...distractors])]
     .filter((n) => Number.isFinite(n) && n >= 0)
-    .sort((a, b) => a - b);
+    .slice(0, 18);
+}
+
+function makeNumberCards(it) {
+  return shuffle(uniqueNumberCards(it));
+}
+
+function nextBlankId(blanks, filled, currentId) {
+  const currentIndex = Math.max(0, blanks.findIndex((b) => b.id === currentId));
+  const ordered = [...blanks.slice(currentIndex + 1), ...blanks.slice(0, currentIndex + 1)];
+  const next = ordered.find((b) => filled[b.id] == null);
+  return next?.id || currentId || blanks[0]?.id || "";
+}
+
+function valuesMatchAnyOrder(actual, expected) {
+  if (actual.length !== expected.length) return false;
+  const remaining = [...expected];
+  for (const value of actual) {
+    const idx = remaining.indexOf(value);
+    if (idx === -1) return false;
+    remaining.splice(idx, 1);
+  }
+  return true;
+}
+
+function evaluateEquation(it, filled) {
+  const n = (id) => Number(filled[id]);
+  const wrong = new Set();
+
+  for (const id of ["a1", "a2", "a3"]) if (n(id) !== it.a) wrong.add(id);
+  if (!valuesMatchAnyOrder([n("tens"), n("ones")], [it.tens, it.ones])) {
+    wrong.add("tens");
+    wrong.add("ones");
+  }
+  if (!valuesMatchAnyOrder([n("tens2"), n("ones2")], [it.tens, it.ones])) {
+    wrong.add("tens2");
+    wrong.add("ones2");
+  }
+  if (!valuesMatchAnyOrder([n("left"), n("right")], [it.leftProduct, it.rightProduct])) {
+    wrong.add("left");
+    wrong.add("right");
+  }
+  if (n("total") !== it.total) wrong.add("total");
+
+  return { ok: wrong.size === 0, wrongIds: [...wrong] };
 }
 
 export const MathDistributiveLawGame = {
@@ -137,9 +209,13 @@ export const MathDistributiveLawGame = {
       selectedSplit: null,
       splitStatus: "idle", // idle | preview | separated | recombined | complete
       splitWasWrong: false,
+      splitFeedbackWrong: false,
+      splitAttempts: 0,
       filled: {},
       selectedBlank: "",
-      wrongBlank: "",
+      wrongBlanks: [],
+      equationAttempts: 0,
+      numberCards: [],
       quickErrors: 0,
       lastErrorAt: 0,
       celebrated: false,
@@ -200,9 +276,13 @@ export const MathDistributiveLawGame = {
       state.selectedSplit = null;
       state.splitStatus = "idle";
       state.splitWasWrong = false;
+      state.splitFeedbackWrong = false;
+      state.splitAttempts = 0;
       state.filled = {};
       state.selectedBlank = "";
-      state.wrongBlank = "";
+      state.wrongBlanks = [];
+      state.equationAttempts = 0;
+      state.numberCards = makeNumberCards(state.current);
       store.ensureSrItem(GAME_ID, itemKey(state.current));
       rerender();
     }
@@ -222,19 +302,23 @@ export const MathDistributiveLawGame = {
       if (state.splitStatus === "complete") return;
       state.selectedSplit = col;
       state.splitStatus = "preview";
-      state.splitWasWrong = false;
+      state.splitFeedbackWrong = false;
       rerender();
     }
 
-    function separateGrid() {
-      if (!state.current || state.selectedSplit == null) return;
-      state.splitStatus = "separated";
+    function checkSplit() {
+      if (!state.current || state.selectedSplit == null || state.splitStatus !== "preview") return;
+      state.splitAttempts += 1;
       const ok = state.selectedSplit === state.current.tens;
-      state.splitWasWrong = !ok;
-      if (ok) toast("בול! פירקנו לעשרות ואחדות ✨");
-      else {
+      state.splitWasWrong = state.splitWasWrong || !ok;
+      if (ok) {
+        state.splitFeedbackWrong = false;
+        state.splitStatus = "separated";
+        toast("בול! פירקנו לעשרות ואחדות ✨");
+      } else {
+        state.splitFeedbackWrong = true;
         recordQuickError();
-        toast("כמעט. נסי לחתוך במספר עגול של עשרות ✋", 1800);
+        toast(state.splitAttempts >= 3 ? `עוד לא. חפשי חיתוך אחרי ${state.current.tens} עמודות 🙂` : "עוד לא מדויק. נסי למצוא איפה העשרות נגמרות 🔎", 1900);
       }
       rerender();
     }
@@ -242,13 +326,14 @@ export const MathDistributiveLawGame = {
     function retrySplit() {
       state.selectedSplit = null;
       state.splitStatus = "idle";
-      state.splitWasWrong = false;
+      state.splitFeedbackWrong = false;
       rerender();
     }
 
     function recombineGrid() {
       if (!state.current || state.selectedSplit !== state.current.tens) return;
       state.splitStatus = "recombined";
+      state.selectedBlank = equationBlanks(state.current)[0]?.id || "";
       toast("המלבן התחבר — עכשיו נשלים את התרגיל 🧩");
       rerender();
     }
@@ -258,26 +343,44 @@ export const MathDistributiveLawGame = {
         toast("קודם נחתוך ונחבר את המלבן 🙂");
         return;
       }
-      const blank = equationBlanks(state.current).find((x) => x.id === blankId);
-      if (!blank || state.filled[blankId] != null) return;
-      if (Number(value) === blank.value) {
-        state.filled[blankId] = value;
-        state.selectedBlank = "";
-        state.wrongBlank = "";
+      const blanks = equationBlanks(state.current);
+      const blank = blanks.find((x) => x.id === blankId);
+      if (!blank) return;
+      state.filled[blankId] = Number(value);
+      state.wrongBlanks = [];
+      state.selectedBlank = nextBlankId(blanks, state.filled, blankId);
+      rerender();
+    }
+
+    function checkEquation() {
+      if (state.splitStatus !== "recombined") return;
+      const blanks = equationBlanks(state.current);
+      const missing = blanks.find((b) => state.filled[b.id] == null);
+      if (missing) {
+        state.selectedBlank = missing.id;
+        toast("עוד יש משבצות ריקות. נמלא את כולן ואז נבדוק 🙂", 1800);
+        rerender();
+        return;
+      }
+
+      state.equationAttempts += 1;
+      const result = evaluateEquation(state.current, state.filled);
+      if (result.ok) {
+        state.wrongBlanks = [];
         playOneShot("./public/audio/answer-correct.mp3");
-        const done = equationBlanks(state.current).every((x) => state.filled[x.id] != null);
-        if (done) completeRound();
+        completeRound();
       } else {
-        state.wrongBlank = blankId;
         recordQuickError();
-        toast(`זה לא ${blank.label}. נסי קלף אחר 🌱`, 1600);
+        state.wrongBlanks = state.equationAttempts >= 3 ? result.wrongIds : [];
+        state.selectedBlank = state.wrongBlanks[0] || state.selectedBlank;
+        toast(state.equationAttempts >= 3 ? "כמעט! סימנתי את המקומות שכדאי לבדוק שוב 🌱" : "עדיין לא מדויק. חפשי איפה מסתתרת הטעות 🔎", 2200);
       }
       rerender();
     }
 
     function completeRound() {
       const rtMs = nowMs() - state.promptAt;
-      const grade = state.splitWasWrong ? 4 : 5;
+      const grade = state.splitWasWrong || state.equationAttempts > 1 ? 4 : 5;
       store.gradeItem(GAME_ID, itemKey(state.current), grade, rtMs);
       store.setGameMastery(GAME_ID, computeMastery(store.getProfile()));
       state.score += grade === 5 ? 1 : 0;
@@ -378,7 +481,7 @@ export const MathDistributiveLawGame = {
       const split = state.selectedSplit;
       const correctSplit = it.tens;
       const selectedText = split == null ? "בחרי קו חיתוך אחרי העשרות" : `${split} + ${it.b - split}`;
-      const canSeparate = split != null && state.splitStatus === "preview";
+      const canCheckSplit = split != null && state.splitStatus === "preview";
       const canRecombine = state.splitStatus === "separated" && split === correctSplit;
       return el("div", { class: "card mathGridCard" }, [
         el("div", { class: "itemRow" }, [
@@ -391,9 +494,9 @@ export const MathDistributiveLawGame = {
         renderAreaGrid(it),
         renderSplitLabels(it),
         el("div", { class: "row", style: "justify-content:center; margin-top:12px" }, [
-          canSeparate ? el("button", { class: "btn", onClick: separateGrid }, ["להפריד ✂️"]) : null,
+          canCheckSplit ? el("button", { class: "btn", onClick: checkSplit }, ["לבדוק חיתוך ✅"]) : null,
           canRecombine ? el("button", { class: "btn", onClick: recombineGrid }, ["לחבר בחזרה 🧲"]) : null,
-          state.splitWasWrong ? el("button", { class: "btn secondary", onClick: retrySplit }, ["לנסות חיתוך אחר"]) : null,
+          state.splitFeedbackWrong ? el("button", { class: "btn secondary", onClick: retrySplit }, ["לנסות חיתוך אחר"]) : null,
           state.splitStatus === "complete" ? el("button", { class: "btn", onClick: nextRound }, [state.round >= state.cfg.roundsPerSession ? "לסיום" : "התרגיל הבא ➜"]) : null,
         ]),
       ]);
@@ -408,14 +511,14 @@ export const MathDistributiveLawGame = {
           const atSplit = state.selectedSplit === c;
           const tensGuide = c % 10 === 0;
           cells.push(el("button", {
-            class: `mathCell ${isLeft ? "left" : ""} ${isRight ? "right" : ""} ${atSplit ? "splitEdge" : ""} ${tensGuide ? "tensGuide" : ""}`,
+            class: `mathCell ${isLeft ? "left" : ""} ${isRight ? "right" : ""} ${isRight && (state.splitStatus === "preview" || state.splitStatus === "separated") ? "splitRight" : ""} ${atSplit ? "splitEdge" : ""} ${tensGuide ? "tensGuide" : ""}`,
             onClick: () => chooseSplit(c),
             title: `עמודה ${c}`,
           }, [state.cfg.themeEmoji]));
         }
       }
       return el("div", {
-        class: `mathAreaGrid ${state.splitStatus} ${state.splitWasWrong ? "wrongSplit" : ""}`,
+        class: `mathAreaGrid ${state.splitStatus} ${state.splitFeedbackWrong ? "wrongSplit" : ""}`,
         style: `--cols:${it.b}; --rows:${it.a};`,
       }, cells);
     }
@@ -425,9 +528,10 @@ export const MathDistributiveLawGame = {
         return el("div", { class: "mathHint", text: "רמז: הקווים העדינים מופיעים כל 10 עמודות." });
       }
       const right = it.b - state.selectedSplit;
+      const labelClass = state.splitStatus === "separated" ? "good" : state.splitFeedbackWrong ? "bad" : "neutral";
       return el("div", { class: "mathSplitLabels" }, [
-        el("div", { class: state.selectedSplit === it.tens ? "good" : "bad", text: `${it.a} × ${state.selectedSplit}` }),
-        el("div", { class: state.selectedSplit === it.tens ? "good" : "bad", text: `${it.a} × ${right}` }),
+        el("div", { class: labelClass, text: `${it.a} × ${state.selectedSplit}` }),
+        el("div", { class: labelClass, text: `${it.a} × ${right}` }),
       ]);
     }
 
@@ -436,7 +540,7 @@ export const MathDistributiveLawGame = {
       const blanks = Object.fromEntries(equationBlanks(it).map((b) => [b.id, b]));
       return el("div", { class: `card mathEquationCard ${unlocked ? "" : "locked"}` }, [
         el("div", { class: "itemRow" }, [
-          el("div", {}, [el("div", { class: "title", text: "משלימים את חוק הפילוג" }), el("div", { class: "sub", text: unlocked ? "הקישי על משבצת ואז על קלף מספר." : "ייפתח אחרי חיתוך נכון וחיבור מחדש." })]),
+          el("div", {}, [el("div", { class: "title", text: "משלימים את חוק הפילוג" }), el("div", { class: "sub", text: unlocked ? "ממלאים הכול בלי רמזים, ואז לוחצים בדיקה." : "ייפתח אחרי חיתוך נכון וחיבור מחדש." })]),
         ]),
         el("div", { class: "mathEquation", dir: "ltr" }, [
           line([`${it.a} × ${it.b}`]),
@@ -445,23 +549,22 @@ export const MathDistributiveLawGame = {
           line(["=", blank(blanks.left), "+", blank(blanks.right)]),
           line(["=", blank(blanks.total)]),
         ]),
-        el("div", { class: "mathCards" }, uniqueNumberCards(it).map((num) =>
+        el("div", { class: "mathCards" }, state.numberCards.map((num) =>
           el("button", { class: "mathNumberCard", disabled: !unlocked, onClick: () => fillFirstOpenBlank(num) }, [String(num)])
         )),
+        el("div", { class: "row", style: "justify-content:center; margin-top:14px" }, [
+          el("button", { class: "btn", disabled: !unlocked || state.splitStatus === "complete", onClick: checkEquation }, ["לבדוק תשובה ✅"]),
+        ]),
       ]);
     }
 
     function fillFirstOpenBlank(num) {
-      const selected = state.selectedBlank && equationBlanks(state.current).find((x) => x.id === state.selectedBlank && state.filled[x.id] == null);
+      const selected = state.selectedBlank && equationBlanks(state.current).find((x) => x.id === state.selectedBlank);
       const next = selected || equationBlanks(state.current).find((x) => state.filled[x.id] == null);
       if (next) fillBlank(next.id, num);
     }
 
     function chooseBlank(b) {
-      if (state.filled[b.id] != null) {
-        toast("כבר מילאנו את זה ✅");
-        return;
-      }
       state.selectedBlank = b.id;
       toast(`עכשיו בוחרים קלף עבור: ${b.label}`);
       rerender();
@@ -470,7 +573,7 @@ export const MathDistributiveLawGame = {
     function blank(b) {
       const value = state.filled[b.id];
       return el("button", {
-        class: `mathBlank ${value != null ? "filled" : ""} ${state.selectedBlank === b.id ? "active" : ""} ${state.wrongBlank === b.id ? "bad" : ""}`,
+        class: `mathBlank ${value != null ? "filled" : ""} ${value != null && state.splitStatus === "complete" ? "checked" : ""} ${state.selectedBlank === b.id ? "active" : ""} ${state.wrongBlanks.includes(b.id) ? "bad" : ""}`,
         onClick: () => chooseBlank(b),
       }, [value == null ? "?" : String(value)]);
     }
