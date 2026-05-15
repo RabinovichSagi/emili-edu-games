@@ -1,9 +1,13 @@
 import { el } from "../ui/dom.js";
 import { EnglishGames } from "../subjects/english/registry.js";
+import { MathGames } from "../subjects/math/registry.js";
 
 const registry = {
   english: {
     ...EnglishGames,
+  },
+  math: {
+    ...MathGames,
   },
 };
 
@@ -24,5 +28,5 @@ export function renderGame({ mount, store, router, screen }) {
     );
     return;
   }
-  game.render({ mount, store, router });
+  game.render({ mount, store, router, subject: screen.subject });
 }

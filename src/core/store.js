@@ -18,6 +18,11 @@ function createDefaultState() {
             titleHe: "אנגלית",
             games: {},
           },
+          math: {
+            id: "math",
+            titleHe: "חשבון",
+            games: {},
+          },
         },
         // per-game item scheduling state:
         // sr[gameId][itemKey] = SrItem
@@ -49,16 +54,30 @@ export function createStore() {
     return state.profiles[state.activeProfileId];
   }
 
-  function getGameConfig(gameId, defaults) {
+  function ensureSubject(subjectId) {
     const p = getProfile();
-    const cfg = p.subjects.english.games[gameId] || {};
+    if (!p.subjects) p.subjects = {};
+    if (!p.subjects[subjectId]) {
+      p.subjects[subjectId] = {
+        id: subjectId,
+        titleHe: subjectId === "math" ? "חשבון" : subjectId,
+        games: {},
+      };
+    }
+    if (!p.subjects[subjectId].games) p.subjects[subjectId].games = {};
+    return p.subjects[subjectId];
+  }
+
+  function getGameConfig(gameId, defaults, subjectId = "english") {
+    const subject = ensureSubject(subjectId);
+    const cfg = subject.games[gameId] || {};
     return { ...defaults, ...cfg };
   }
 
-  function setGameConfig(gameId, patch) {
-    const p = getProfile();
-    const prev = p.subjects.english.games[gameId] || {};
-    p.subjects.english.games[gameId] = { ...prev, ...patch };
+  function setGameConfig(gameId, patch, subjectId = "english") {
+    const subject = ensureSubject(subjectId);
+    const prev = subject.games[gameId] || {};
+    subject.games[gameId] = { ...prev, ...patch };
     persist();
     emit();
   }

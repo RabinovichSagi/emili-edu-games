@@ -10,15 +10,30 @@ export function renderHome({ mount, router }) {
         ]),
       ]),
       el("div", { class: "grid" }, [
-        el("div", { class: "card", style: "cursor:pointer;", onClick: () => router.push({ subject: "english" }), role: "button", tabindex: "0" }, [
-          el("div", { class: "itemRow" }, [
-            el("div", {}, [
-              el("div", { class: "title", text: "אנגלית" }),
-              el("div", { class: "sub", text: "אותיות, קריאה, ועוד" }),
-            ]),
-          ]),
-        ]),
+        subjectCard({
+          title: "אנגלית",
+          subtitle: "אותיות, קריאה, ועוד",
+          emoji: "🔤",
+          onClick: () => router.push({ subject: "english" }),
+        }),
+        subjectCard({
+          title: "חשבון",
+          subtitle: "כפל, פירוק מספרים, ועוד",
+          emoji: "🧮",
+          onClick: () => router.push({ subject: "math" }),
+        }),
       ]),
     ])
   );
+}
+
+function subjectCard({ title, subtitle, emoji, onClick }) {
+  return el("div", { class: "card", style: "cursor:pointer;", onClick, role: "button", tabindex: "0" }, [
+    el("div", { class: "itemRow" }, [
+      el("div", {}, [
+        el("div", { class: "title", text: `${emoji} ${title}` }),
+        el("div", { class: "sub", text: subtitle }),
+      ]),
+    ]),
+  ]);
 }
