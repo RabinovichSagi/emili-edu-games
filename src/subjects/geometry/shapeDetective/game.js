@@ -5,6 +5,7 @@ const GAME_ID = "shape_detective";
 const CREATED_AT = 20260520;
 
 const SHAPES = ["rectangle", "square", "parallelogram", "trapezoid", "rhombus", "kite"];
+const GENERIC_QUAD = "generic_quadrilateral";
 
 const SHAPE_HE = {
   rectangle: "מלבן",
@@ -14,6 +15,9 @@ const SHAPE_HE = {
   rhombus: "מעוין",
   kite: "דלתון",
 };
+function shapeLabel(shape) {
+  return shape === GENERIC_QUAD ? "מרובע" : SHAPE_HE[shape];
+}
 
 const DEFINITIONS = {
   parallel_lines: "קווים מקבילים – שני קווים ישרים שאינם נפגשים אף פעם.",
@@ -24,6 +28,7 @@ const DEFINITIONS = {
   square: "ריבוע – מרובע שכל הצלעות שבו שוות וכל הזוויות שבו ישרות.",
   rectangle: "מלבן – מרובע שכל הזוויות שבו ישרות.",
   kite: "דלתון – מרובע שיש לו שני זוגות נפרדים של צלעות שוות ולכל זוג כזה יש קודקוד משותף.",
+  generic_quadrilateral: "מרובע – צורה בעלת ארבע צלעות.",
 };
 
 const SHAPE_TO_DEFINITION = {
@@ -34,6 +39,7 @@ const SHAPE_TO_DEFINITION = {
   rectangle: DEFINITIONS.rectangle,
   kite: DEFINITIONS.kite,
 };
+const DEFINITION_GAME_SHAPES = [...SHAPES, GENERIC_QUAD];
 
 function defaultConfig() {
   return { roundsPerSession: 8, rotation: true, enabledShapes: SHAPES, enableNearMiss: true };
@@ -47,8 +53,59 @@ function normalizeConfig(cfg) {
 function rand(a) { return a[Math.floor(Math.random() * a.length)]; }
 function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 function itemKey(i) { return `${i.mode}|${i.shape}|d${i.difficulty}`; }
+function signedArea(points) {
+  let area = 0;
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
+    area += x1 * y2 - y1 * x2;
+  }
+  return area / 2;
+}
+function angleAt(points, i) {
+  const n = points.length;
+  const prev = points[(i - 1 + n) % n];
+  const cur = points[i];
+  const next = points[(i + 1) % n];
+  const v1 = [prev[0] - cur[0], prev[1] - cur[1]];
+  const v2 = [next[0] - cur[0], next[1] - cur[1]];
+  const dot = v1[0] * v2[0] + v1[1] * v2[1];
+  const mag = Math.hypot(v1[0], v1[1]) * Math.hypot(v2[0], v2[1]);
+  if (!mag) return 180;
+  return Math.acos(Math.min(1, Math.max(-1, dot / mag))) * (180 / Math.PI);
+}
+function validNonRightishQuad(points) {
+  if (signedArea(points) <= 0) return false;
+  return points.every((_, i) => {
+    const a = angleAt(points, i);
+    return a < 84 || a > 96;
+  });
+}
+function randomGenericQuadrilateral() {
+  for (let i = 0; i < 120; i++) {
+    const points = [
+      [15 + Math.random() * 18, 12 + Math.random() * 24],
+      [62 + Math.random() * 23, 10 + Math.random() * 28],
+      [64 + Math.random() * 24, 50 + Math.random() * 19],
+      [9 + Math.random() * 28, 46 + Math.random() * 24],
+    ];
+    if (validNonRightishQuad(points)) return points;
+  }
+  return [[18, 16], [84, 24], [72, 66], [12, 54]];
+}
+function jitterShapePoints(shape) {
+  if (shape === GENERIC_QUAD) return randomGenericQuadrilateral();
+  const base = shapePoints(shape, false);
+  for (let i = 0; i < 80; i++) {
+    const points = base.map(([x, y]) => [x + (Math.random() * 8 - 4), y + (Math.random() * 8 - 4)]);
+    if (shape !== "rectangle" && shape !== "square" && validNonRightishQuad(points)) return points;
+    if (shape === "rectangle" || shape === "square") return points;
+  }
+  return base;
+}
 
-function shapePoints(shape, nearMiss = false) {
+function shapePoints(shape, nearMiss = false, customPoints = null) {
+  if (shape === GENERIC_QUAD && Array.isArray(customPoints)) return customPoints;
   const n = nearMiss ? 0.08 : 0;
   if (shape === "rectangle") return [[18, 18], [82, 18 + n * 15], [82, 62], [18, 62 - n * 15]];
   if (shape === "square") return [[25, 15], [75, 15 + n * 18], [75, 65], [25, 65 - n * 18]];
@@ -58,8 +115,8 @@ function shapePoints(shape, nearMiss = false) {
   return [[50, 16], [78, 34], [62, 64], [22, 42]];
 }
 
-function svgShape(shape, { rotation = 0, nearMiss = false, size = 160 } = {}) {
-  const pts = shapePoints(shape, nearMiss).map((p) => p.join(",")).join(" ");
+function svgShape(shape, { rotation = 0, nearMiss = false, size = 160, customPoints = null } = {}) {
+  const pts = shapePoints(shape, nearMiss, customPoints).map((p) => p.join(",")).join(" ");
   return `<svg viewBox='0 0 100 80' width='${size}' height='${size * 0.8}' aria-hidden='true'><g transform='rotate(${rotation} 50 40)'><polygon points='${pts}' fill='rgba(124,108,255,.16)' stroke='rgba(55,67,120,.8)' stroke-width='2.2' stroke-linejoin='round'/></g></svg>`;
 }
 
@@ -97,14 +154,39 @@ export const GeometryShapeDetectiveGame = {
 
     function makeItem() {
       const shape = rand(state.cfg.enabledShapes);
+      const targetShapeForText = rand(DEFINITION_GAME_SHAPES);
       const difficulty = Math.min(3, 1 + Math.floor(state.round / 3));
-      const modes = ["recognition", "definition", "property_detect"];
-      if (state.cfg.enableNearMiss && difficulty > 1) modes.push("near_miss");
+      const useGeneric = difficulty > 1 && Math.random() < 0.3;
+      const modes = useGeneric
+        ? ["shape_to_name", "shape_to_definition", "definition_to_shape", "name_to_shape", "definition_to_name", "name_to_definition", "property_detect", "odd_one_out"]
+        : ["shape_to_name", "shape_to_definition", "definition_to_shape", "name_to_shape", "definition_to_name", "name_to_definition", "property_detect", "odd_one_out"];
+      if (!useGeneric && state.cfg.enableNearMiss && difficulty > 1) modes.push("near_miss");
+      const oddMain = rand(state.cfg.enabledShapes);
+      const oddPool = state.cfg.enabledShapes.filter((s) => s !== oddMain);
+      const oddDifferent = rand(oddPool.length ? oddPool : SHAPES.filter((s) => s !== oddMain));
+      const oddChoices = shuffle([
+        { id: "a", shape: oddMain, customPoints: jitterShapePoints(oddMain) },
+        { id: "b", shape: oddMain, customPoints: jitterShapePoints(oddMain) },
+        { id: "c", shape: oddMain, customPoints: jitterShapePoints(oddMain) },
+        { id: "d", shape: oddDifferent, customPoints: jitterShapePoints(oddDifferent) },
+      ]);
+      const shapePickChoices = shuffle([
+        { id: "a", shape: targetShapeForText, customPoints: jitterShapePoints(targetShapeForText) },
+        { id: "b", shape: rand(SHAPES.filter((s) => s !== targetShapeForText)), customPoints: jitterShapePoints(rand(SHAPES.filter((s) => s !== targetShapeForText))) },
+        { id: "c", shape: rand(SHAPES.filter((s) => s !== targetShapeForText)), customPoints: jitterShapePoints(rand(SHAPES.filter((s) => s !== targetShapeForText))) },
+        { id: "d", shape: rand(SHAPES.filter((s) => s !== targetShapeForText)), customPoints: jitterShapePoints(rand(SHAPES.filter((s) => s !== targetShapeForText))) },
+      ]);
       return {
-        shape,
+        shape: useGeneric ? GENERIC_QUAD : shape,
+        targetShapeForText,
         difficulty,
         mode: rand(modes),
         rotation: state.cfg.rotation ? Math.floor(Math.random() * 170) - 85 : 0,
+        customPoints: useGeneric ? randomGenericQuadrilateral() : null,
+        oddMain,
+        oddDifferent,
+        oddChoices,
+        shapePickChoices,
       };
     }
 
@@ -155,18 +237,41 @@ export const GeometryShapeDetectiveGame = {
       if (Date.now() < state.lockUntil) return;
       const cur = state.current;
 
-      if (cur.mode === "recognition") {
+      if (cur.mode === "shape_to_name") {
         const ok = choiceKey === cur.shape;
         state.feedback = ok ? "מעולה! זיהוי מצוין 🌟" : `כמעט! זאת/זה ${SHAPE_HE[cur.shape]}.`;
         gradeAnswer(ok);
-      } else if (cur.mode === "definition") {
+      } else if (cur.mode === "shape_to_definition") {
         const ok = choiceKey === cur.shape;
         state.feedback = ok ? "נכון מאוד!" : `רמז: ${SHAPE_TO_DEFINITION[cur.shape]}`;
+        gradeAnswer(ok);
+      } else if (cur.mode === "definition_to_shape") {
+        const pick = cur.shapePickChoices.find((x) => x.id === choiceKey);
+        const ok = pick?.shape === cur.targetShapeForText;
+        state.feedback = ok ? "מעולה! התאמת הגדרה לצורה 👏" : `כמעט! נסו למצוא ${shapeLabel(cur.targetShapeForText)}.`;
+        gradeAnswer(ok);
+      } else if (cur.mode === "name_to_shape") {
+        const pick = cur.shapePickChoices.find((x) => x.id === choiceKey);
+        const ok = pick?.shape === cur.targetShapeForText;
+        state.feedback = ok ? "נכון מאוד! מצאתם לפי השם 🎯" : `כמעט! זו הצורה ${shapeLabel(cur.targetShapeForText)}.`;
+        gradeAnswer(ok);
+      } else if (cur.mode === "definition_to_name") {
+        const ok = choiceKey === cur.targetShapeForText;
+        state.feedback = ok ? "כל הכבוד! הגדרה לשם ✅" : "כמעט! קראו את ההגדרה שוב וחפשו את השם המתאים.";
+        gradeAnswer(ok);
+      } else if (cur.mode === "name_to_definition") {
+        const ok = choiceKey === cur.targetShapeForText;
+        state.feedback = ok ? "אלופה! שם להגדרה 💡" : "עוד ניסיון קטן: חפשו את ההגדרה שמתארת בדיוק את השם.";
         gradeAnswer(ok);
       } else if (cur.mode === "property_detect") {
         const expect = cur.shape === "rectangle" || cur.shape === "square" || cur.shape === "parallelogram" ? "parallel2" : "parallel1";
         const ok = choiceKey === expect;
         state.feedback = ok ? "אלופה! זיהית מקבילות נכון ✅" : `נסו שוב: ${DEFINITIONS.parallel_lines}`;
+        gradeAnswer(ok);
+      } else if (cur.mode === "odd_one_out") {
+        const oddPick = cur.oddChoices.find((x) => x.id === choiceKey);
+        const ok = oddPick?.shape === cur.oddDifferent;
+        state.feedback = ok ? "בול! מצאת את היוצא דופן 🕵️" : `כמעט! היוצא דופן היה ${SHAPE_HE[cur.oddDifferent]}.`;
         gradeAnswer(ok);
       } else {
         const nearMissCorrect = cur.shape === "square" || cur.shape === "rectangle" ? "no" : "yes";
@@ -210,25 +315,44 @@ export const GeometryShapeDetectiveGame = {
           el("div", {
             class: "title",
             text:
-              c.mode === "recognition"
-                ? `בחרו: ${SHAPE_HE[c.shape]}`
-                : c.mode === "definition"
-                  ? `מי מתאים להגדרה: ${SHAPE_TO_DEFINITION[c.shape]}`
+              c.mode === "shape_to_name"
+                  ? "מה השם של הצורה המוצגת?"
+                  : c.mode === "shape_to_definition"
+                    ? "בחרו את ההגדרה שמתאימה לצורה המוצגת:"
+                    : c.mode === "definition_to_shape"
+                      ? `בחרו את הצורה שמתאימה להגדרה: ${DEFINITIONS[c.targetShapeForText].replace(/^[^–]+–\s*/, "")}`
+                      : c.mode === "name_to_shape"
+                        ? `בחרו את הצורה: ${shapeLabel(c.targetShapeForText)}`
+                        : c.mode === "definition_to_name"
+                          ? `איזה שם מתאים להגדרה: ${DEFINITIONS[c.targetShapeForText].replace(/^[^–]+–\s*/, "")}`
+                          : c.mode === "name_to_definition"
+                            ? `איזו הגדרה מתאימה ל-${shapeLabel(c.targetShapeForText)}?`
                   : c.mode === "property_detect"
                     ? "כמה זוגות צלעות מקבילות יש לצורה?"
+                      : c.mode === "odd_one_out"
+                        ? "מי הצורה היוצאת דופן?"
                     : "האם זו צורה תקינה?",
           }),
-          el("div", { class: "shapeStage", html: svgShape(c.shape, { rotation: c.rotation, nearMiss: near && (c.shape === "square" || c.shape === "rectangle") }) }),
+          ["definition_to_shape", "name_to_shape", "odd_one_out"].includes(c.mode)
+            ? el("div", { class: "choices" }, (c.mode === "odd_one_out" ? c.oddChoices : c.shapePickChoices).map((o) => el("button", { class: "choiceBtn", onClick: () => onAnswer(o.id), type: "button" }, [el("div", { html: svgShape(o.shape, { rotation: state.cfg.rotation ? Math.floor(Math.random() * 170) - 85 : 0, customPoints: o.customPoints, size: 118 }) })])))
+            : el("div", { class: "shapeStage", html: svgShape(c.shape, { rotation: c.rotation, nearMiss: near && (c.shape === "square" || c.shape === "rectangle"), customPoints: c.customPoints }) }),
           c.mode === "near_miss" ? el("div", { class: "sub", text: "שימו לב: לפעמים צורה כמעט נכונה אבל לא בדיוק." }) : null,
+          c.mode === "odd_one_out" ? el("div", { class: "sub", text: "שלוש צורות מאותה משפחה ואחת שונה. הסתכלו על תכונות, לא רק על הסיבוב 👀" }) : null,
           el(
             "div",
             { class: "choices" },
             (
-              c.mode === "property_detect"
+              ["definition_to_shape", "name_to_shape", "odd_one_out"].includes(c.mode)
+                ? []
+                : c.mode === "property_detect"
                 ? [{ k: "parallel1", t: "זוג אחד" }, { k: "parallel2", t: "שני זוגות" }]
                 : c.mode === "near_miss"
                   ? [{ k: "yes", t: "כן, תקינה" }, { k: "no", t: "לא, יש בעיה" }]
-                  : shuffle(state.cfg.enabledShapes).slice(0, 4).map((s) => ({ k: s, t: SHAPE_HE[s] }))
+                  : c.mode === "shape_to_definition" || c.mode === "name_to_definition"
+                    ? shuffle(DEFINITION_GAME_SHAPES).slice(0, 4).map((s) => ({ k: s, t: DEFINITIONS[s] }))
+                    : c.mode === "definition_to_name" || c.mode === "shape_to_name"
+                      ? shuffle(DEFINITION_GAME_SHAPES).slice(0, 4).map((s) => ({ k: s, t: shapeLabel(s) }))
+                      : shuffle(state.cfg.enabledShapes).slice(0, 4).map((s) => ({ k: s, t: SHAPE_HE[s] }))
             ).map((o) => el("button", { class: "choiceBtn", onClick: () => onAnswer(o.k), type: "button" }, [o.t]))
           ),
           state.feedback ? el("div", { class: "pill", style: "margin-top:10px;", text: state.feedback, dir: "rtl" }) : null,
