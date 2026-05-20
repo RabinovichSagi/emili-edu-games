@@ -1,6 +1,7 @@
 import { el } from "../ui/dom.js";
 import { listEnglishGamesNewestFirst } from "../subjects/english/registry.js";
 import { listMathGamesNewestFirst } from "../subjects/math/registry.js";
+import { listGeometryGamesNewestFirst } from "../subjects/geometry/registry.js";
 
 const Subjects = {
   english: {
@@ -12,6 +13,11 @@ const Subjects = {
     titleHe: "חשבון",
     subtitleHe: "משחקי מספרים, צורות וחשיבה 🧮",
     listGames: listMathGamesNewestFirst,
+  },
+  geometry: {
+    titleHe: "גיאומטריה",
+    subtitleHe: "צורות, תכונות וחקירות בלשיות 📐",
+    listGames: listGeometryGamesNewestFirst,
   },
 };
 
