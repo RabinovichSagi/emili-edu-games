@@ -17,6 +17,12 @@ export function renderHome({ mount, router }) {
           onClick: () => router.push({ subject: "english" }),
         }),
         subjectCard({
+          title: "גיאומטריה",
+          subtitle: "צורות, תכונות, וחשיבה מרחבית",
+          emoji: "📐",
+          onClick: () => router.push({ subject: "geometry" }),
+        }),
+        subjectCard({
           title: "חשבון",
           subtitle: "כפל, פירוק מספרים, ועוד",
           emoji: "🧮",

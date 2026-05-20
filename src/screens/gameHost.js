@@ -1,6 +1,7 @@
 import { el } from "../ui/dom.js";
 import { EnglishGames } from "../subjects/english/registry.js";
 import { MathGames } from "../subjects/math/registry.js";
+import { GeometryGames } from "../subjects/geometry/registry.js";
 
 const registry = {
   english: {
@@ -8,6 +9,9 @@ const registry = {
   },
   math: {
     ...MathGames,
+  },
+  geometry: {
+    ...GeometryGames,
   },
 };
 
