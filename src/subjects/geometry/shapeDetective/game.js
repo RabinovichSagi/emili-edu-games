@@ -74,6 +74,39 @@ function angleAt(points, i) {
   if (!mag) return 180;
   return Math.acos(Math.min(1, Math.max(-1, dot / mag))) * (180 / Math.PI);
 }
+
+function edgeLengths(points) {
+  return points.map((p, i) => {
+    const q = points[(i + 1) % points.length];
+    return Math.hypot(q[0] - p[0], q[1] - p[1]);
+  });
+}
+function relativeDifference(a, b) {
+  const base = Math.max(a, b);
+  return base ? Math.abs(a - b) / base : 0;
+}
+function respectsShapeDistinction(shape, points) {
+  const lengths = edgeLengths(points);
+  const [l0, l1, l2, l3] = lengths;
+  if (shape === 'rectangle') {
+    const width = (l0 + l2) / 2;
+    const height = (l1 + l3) / 2;
+    return relativeDifference(width, height) >= 0.30;
+  }
+  if (shape === 'kite') {
+    const pairA = (l0 + l1) / 2;
+    const pairB = (l2 + l3) / 2;
+    return relativeDifference(pairA, pairB) >= 0.30;
+  }
+  if (shape === 'trapezoid') {
+    return points.every((_, i) => {
+      const a = angleAt(points, i);
+      return a <= 80 || a >= 100;
+    });
+  }
+  return true;
+}
+
 function validNonRightishQuad(points) {
   if (signedArea(points) <= 0) return false;
   return points.every((_, i) => {
@@ -96,10 +129,10 @@ function randomGenericQuadrilateral() {
 function jitterShapePoints(shape) {
   if (shape === GENERIC_QUAD) return randomGenericQuadrilateral();
   const base = shapePoints(shape, false);
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 120; i++) {
     const points = base.map(([x, y]) => [x + (Math.random() * 8 - 4), y + (Math.random() * 8 - 4)]);
-    if (shape !== "rectangle" && shape !== "square" && validNonRightishQuad(points)) return points;
-    if (shape === "rectangle" || shape === "square") return points;
+    const nonRightishOk = (shape === "rectangle" || shape === "square") ? true : validNonRightishQuad(points);
+    if (nonRightishOk && respectsShapeDistinction(shape, points)) return points;
   }
   return base;
 }
@@ -107,12 +140,12 @@ function jitterShapePoints(shape) {
 function shapePoints(shape, nearMiss = false, customPoints = null) {
   if (shape === GENERIC_QUAD && Array.isArray(customPoints)) return customPoints;
   const n = nearMiss ? 0.08 : 0;
-  if (shape === "rectangle") return [[18, 18], [82, 18 + n * 15], [82, 62], [18, 62 - n * 15]];
+  if (shape === "rectangle") return [[18, 18], [86, 18 + n * 12], [86, 56], [18, 56 - n * 12]];
   if (shape === "square") return [[25, 15], [75, 15 + n * 18], [75, 65], [25, 65 - n * 18]];
   if (shape === "parallelogram") return [[25, 18], [80, 18], [70, 62], [15, 62]];
-  if (shape === "trapezoid") return [[22, 20], [78, 20], [88, 62], [12, 62]];
+  if (shape === "trapezoid") return [[26, 18], [74, 18], [90, 62], [10, 58]];
   if (shape === "rhombus") return [[50, 12], [82, 40], [50, 68], [18, 40]];
-  return [[50, 16], [78, 34], [62, 64], [22, 42]];
+  return [[40, 16], [72, 32], [58, 66], [18, 52]];
 }
 
 function svgShape(shape, { rotation = 0, nearMiss = false, size = 160, customPoints = null } = {}) {
@@ -170,11 +203,16 @@ export const GeometryShapeDetectiveGame = {
         { id: "c", shape: oddMain, customPoints: jitterShapePoints(oddMain) },
         { id: "d", shape: oddDifferent, customPoints: jitterShapePoints(oddDifferent) },
       ]);
+      const pickPool = DEFINITION_GAME_SHAPES.filter((s) => s !== targetShapeForText);
+      const randomChoice = () => {
+        const pickShape = rand(pickPool);
+        return { shape: pickShape, customPoints: jitterShapePoints(pickShape) };
+      };
       const shapePickChoices = shuffle([
         { id: "a", shape: targetShapeForText, customPoints: jitterShapePoints(targetShapeForText) },
-        { id: "b", shape: rand(SHAPES.filter((s) => s !== targetShapeForText)), customPoints: jitterShapePoints(rand(SHAPES.filter((s) => s !== targetShapeForText))) },
-        { id: "c", shape: rand(SHAPES.filter((s) => s !== targetShapeForText)), customPoints: jitterShapePoints(rand(SHAPES.filter((s) => s !== targetShapeForText))) },
-        { id: "d", shape: rand(SHAPES.filter((s) => s !== targetShapeForText)), customPoints: jitterShapePoints(rand(SHAPES.filter((s) => s !== targetShapeForText))) },
+        { id: "b", ...randomChoice() },
+        { id: "c", ...randomChoice() },
+        { id: "d", ...randomChoice() },
       ]);
       return {
         shape: useGeneric ? GENERIC_QUAD : shape,
