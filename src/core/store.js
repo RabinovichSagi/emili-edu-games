@@ -28,6 +28,11 @@ function createDefaultState() {
             titleHe: "גיאומטריה",
             games: {},
           },
+          torah: {
+            id: "torah",
+            titleHe: "תורה",
+            games: {},
+          },
         },
         // per-game item scheduling state:
         // sr[gameId][itemKey] = SrItem
@@ -65,7 +70,7 @@ export function createStore() {
     if (!p.subjects[subjectId]) {
       p.subjects[subjectId] = {
         id: subjectId,
-        titleHe: subjectId === "math" ? "חשבון" : subjectId === "geometry" ? "גיאומטריה" : subjectId,
+        titleHe: subjectId === "math" ? "חשבון" : subjectId === "geometry" ? "גיאומטריה" : subjectId === "torah" ? "תורה" : subjectId,
         games: {},
       };
     }

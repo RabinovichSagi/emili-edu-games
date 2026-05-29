@@ -28,6 +28,12 @@ export function renderHome({ mount, router }) {
           emoji: "🧮",
           onClick: () => router.push({ subject: "math" }),
         }),
+        subjectCard({
+          title: "תורה",
+          subtitle: "פרשת שבוע, סיפורים, וסדר אירועים",
+          emoji: "📜",
+          onClick: () => router.push({ subject: "torah" }),
+        }),
       ]),
     ])
   );

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
+  <title id="title">יום ראשון: אור וחושך</title>
+  <desc id="desc">איור עדין של אור זהוב הנפרד מחושך כחול עם כוכבים.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#17214f"/>
+      <stop offset="0.47" stop-color="#2f3b76"/>
+      <stop offset="0.53" stop-color="#ffe9a6"/>
+      <stop offset="1" stop-color="#fff7d7"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="40%" r="50%">
+      <stop offset="0" stop-color="#fff8bf" stop-opacity="0.95"/>
+      <stop offset="0.52" stop-color="#ffd66b" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#ffd66b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="620" rx="46" fill="url(#sky)"/>
+  <path d="M452 0C408 76 502 142 452 219c-48 74-140 102-122 190 13 66 97 95 122 211H0V0z" fill="#0f173f" opacity="0.38"/>
+  <circle cx="640" cy="292" r="242" fill="url(#glow)"/>
+  <g fill="#fff4b8" opacity="0.95">
+    <circle cx="110" cy="95" r="8"/><circle cx="188" cy="155" r="5"/><circle cx="82" cy="265" r="6"/>
+    <circle cx="252" cy="86" r="4"/><circle cx="315" cy="242" r="7"/><circle cx="146" cy="382" r="4"/>
+  </g>
+  <g transform="translate(638 296)">
+    <circle r="86" fill="#ffe27a"/>
+    <circle r="64" fill="#fff1a8"/>
+    <path d="M-31 5c14 20 48 20 62 0" fill="none" stroke="#9d7132" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="-29" cy="-18" r="8" fill="#6d512b"/><circle cx="29" cy="-18" r="8" fill="#6d512b"/>
+  </g>
+  <path d="M0 526c143-68 265-70 387-22 118 47 253 44 513-31v147H0z" fill="#ffe0ef" opacity="0.72"/>
+</svg>

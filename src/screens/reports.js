@@ -3,10 +3,14 @@ import { formatDateTime, formatDurationMs } from "../core/time.js";
 import { isDue } from "../core/sr.js";
 import { listEnglishGamesNewestFirst } from "../subjects/english/registry.js";
 import { listMathGamesNewestFirst } from "../subjects/math/registry.js";
+import { listGeometryGamesNewestFirst } from "../subjects/geometry/registry.js";
+import { listTorahGamesNewestFirst } from "../subjects/torah/registry.js";
 
 const SubjectReports = [
   { id: "english", titleHe: "אנגלית", listGames: listEnglishGamesNewestFirst },
   { id: "math", titleHe: "חשבון", listGames: listMathGamesNewestFirst },
+  { id: "geometry", titleHe: "גיאומטריה", listGames: listGeometryGamesNewestFirst },
+  { id: "torah", titleHe: "תורה", listGames: listTorahGamesNewestFirst },
 ];
 
 function pct(n) {
