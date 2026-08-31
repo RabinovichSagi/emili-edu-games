@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
+  <title id="title">יום רביעי: מאורות</title>
+  <desc id="desc">איור שמח של שמש, ירח וכוכבים בשמים.</desc>
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#35327f"/><stop offset="0.52" stop-color="#6d72cf"/><stop offset="1" stop-color="#ffd6a8"/></linearGradient>
+    <radialGradient id="sunGlow" cx="68%" cy="34%" r="36%"><stop offset="0" stop-color="#fff4a8" stop-opacity="0.9"/><stop offset="1" stop-color="#ffd36b" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="900" height="620" rx="46" fill="url(#space)"/>
+  <circle cx="610" cy="224" r="214" fill="url(#sunGlow)"/>
+  <g transform="translate(620 222)">
+    <g stroke="#ffd35f" stroke-width="21" stroke-linecap="round">
+      <path d="M0-144v-48M0 144v48M-144 0h-48M144 0h48M-102-102l-35-35M102 102l35 35M102-102l35-35M-102 102l-35 35"/>
+    </g>
+    <circle r="96" fill="#ffe37c"/><circle r="72" fill="#fff1ac"/>
+    <circle cx="-31" cy="-19" r="8" fill="#6d512b"/><circle cx="31" cy="-19" r="8" fill="#6d512b"/>
+    <path d="M-35 17c19 22 51 22 70 0" fill="none" stroke="#9d7132" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <path d="M252 173c-51 52-52 136-4 189 39 43 101 55 153 33-71-15-118-83-105-155 8-45 38-81 79-101-43-15-89-3-123 34z" fill="#fff0b8"/>
+  <g fill="#fff6b8">
+    <path d="M118 88l13 27 30 4-22 20 5 30-26-14-27 14 6-30-22-20 30-4z"/>
+    <path d="M190 310l10 20 22 3-16 15 4 22-20-11-20 11 4-22-17-15 23-3z"/>
+    <path d="M458 91l9 18 20 3-14 14 3 20-18-10-18 10 4-20-15-14 20-3z"/>
+    <path d="M745 426l12 24 26 4-19 18 5 26-24-13-23 13 5-26-19-18 26-4z"/>
+    <circle cx="114" cy="440" r="8"/><circle cx="346" cy="90" r="7"/><circle cx="500" cy="449" r="6"/><circle cx="820" cy="118" r="7"/>
+  </g>
+  <path d="M0 516c135-58 260-62 374-12 104 46 208 43 312-9 70-35 141-42 214-20v145H0z" fill="#ffe4f1" opacity="0.58"/>
+</svg>

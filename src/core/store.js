@@ -23,6 +23,16 @@ function createDefaultState() {
             titleHe: "חשבון",
             games: {},
           },
+          geometry: {
+            id: "geometry",
+            titleHe: "גיאומטריה",
+            games: {},
+          },
+          torah: {
+            id: "torah",
+            titleHe: "תורה",
+            games: {},
+          },
         },
         // per-game item scheduling state:
         // sr[gameId][itemKey] = SrItem
@@ -33,7 +43,6 @@ function createDefaultState() {
     },
   };
 }
-
 export function createStore() {
   let state = loadState();
   if (!state || state.schemaVersion !== 1) state = createDefaultState();
@@ -56,15 +65,15 @@ export function createStore() {
 
   function ensureSubject(subjectId) {
     const p = getProfile();
-    p.subjects ||= {};
+    if (!p.subjects) p.subjects = {};
     if (!p.subjects[subjectId]) {
       p.subjects[subjectId] = {
         id: subjectId,
-        titleHe: subjectId === "math" ? "חשבון" : subjectId,
+        titleHe: subjectId === "math" ? "חשבון" : subjectId === "geometry" ? "גיאומטריה" : subjectId === "torah" ? "תורה" : subjectId,
         games: {},
       };
     }
-    p.subjects[subjectId].games ||= {};
+    if (!p.subjects[subjectId].games) p.subjects[subjectId].games = {};
     return p.subjects[subjectId];
   }
 

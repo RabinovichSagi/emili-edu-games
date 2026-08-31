@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shape Detective — Geometry Mini Game</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --primary: #4f46e5;
+      --primary-soft: #eef2ff;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #dc2626;
+      --line: #e5e7eb;
+      --shadow: 0 16px 40px rgba(31, 41, 55, 0.12);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #e0f2fe, transparent 34%), var(--bg);
+      color: var(--ink);
+      display: flex;
+      justify-content: center;
+      padding: 22px;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: 1fr 330px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.75);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1 { margin: 0; font-size: clamp(26px, 3vw, 40px); letter-spacing: -0.04em; }
+    .subtitle { margin-top: 4px; color: var(--muted); font-weight: 600; }
+
+    .scorebar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 13px;
+      font-weight: 800;
+      white-space: nowrap;
+      box-shadow: 0 8px 18px rgba(31,41,55,0.06);
+    }
+
+    main, aside {
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    main { padding: 18px; }
+    aside { padding: 18px; position: sticky; top: 18px; }
+
+    .challenge-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .prompt {
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.12;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      margin: 0;
+    }
+
+    .mode-tag {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .instruction {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 650;
+      margin: 8px 0 0;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(150px, 1fr));
+      gap: 14px;
+      margin: 14px 0 18px;
+    }
+
+    .shape-card {
+      min-height: 168px;
+      background: #fff;
+      border: 3px solid var(--line);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .shape-card:hover { transform: translateY(-2px); }
+    .shape-card.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .shape-card.correct { border-color: var(--success); background: #ecfdf5; }
+    .shape-card.wrong { border-color: var(--danger); background: #fef2f2; }
+    .shape-card.locked { cursor: default; }
+
+    .shape-label {
+      position: absolute;
+      top: 9px;
+      left: 11px;
+      font-weight: 900;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    svg { overflow: visible; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 13px 17px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-1px); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .primary { background: var(--primary); color: white; }
+    .secondary { background: #f3f4f6; color: var(--ink); }
+    .ghost { background: transparent; color: var(--primary); }
+
+    .reason-panel {
+      display: none;
+      background: #fffbeb;
+      border: 2px solid #fde68a;
+      border-radius: 20px;
+      padding: 15px;
+      margin: 14px 0;
+    }
+
+    .reason-panel.visible { display: block; }
+    .reason-title { font-size: 20px; font-weight: 950; margin-bottom: 10px; }
+    .reason-options { display: grid; gap: 9px; }
+
+    .reason-option {
+      width: 100%;
+      text-align: left;
+      background: white;
+      border: 2px solid var(--line);
+      color: var(--ink);
+    }
+    .reason-option.selected { border-color: var(--primary); background: var(--primary-soft); }
+
+    .feedback {
+      min-height: 74px;
+      border-radius: 20px;
+      padding: 14px;
+      background: #f9fafb;
+      border: 1px solid var(--line);
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .feedback.good { background: #ecfdf5; border-color: #bbf7d0; color: #14532d; }
+    .feedback.bad { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+    .feedback.warn { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+
+    aside h2 { margin: 0 0 10px; font-size: 22px; letter-spacing: -0.03em; }
+    .side-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 13px;
+      background: white;
+      margin-bottom: 12px;
+    }
+
+    .side-card strong { display: block; margin-bottom: 5px; }
+    .shape-list { display: grid; gap: 8px; }
+    .mini-def { color: var(--muted); font-size: 14px; line-height: 1.25; }
+
+    .property-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .property-chip {
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: white;
+      cursor: pointer;
+      font-weight: 850;
+      font-size: 14px;
+    }
+
+    .property-chip.selected { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+
+    .meter {
+      height: 14px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .meter-fill { height: 100%; width: 0%; background: var(--primary); transition: width 220ms ease; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%) translateY(120px);
+      background: #111827;
+      color: white;
+      border-radius: 999px;
+      padding: 13px 18px;
+      font-weight: 900;
+      box-shadow: var(--shadow);
+      transition: transform 180ms ease;
+      z-index: 10;
+    }
+    .toast.visible { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      aside { position: static; }
+      .board { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      header { align-items: flex-start; flex-direction: column; }
+      .scorebar { justify-content: flex-start; }
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 12px; }
+      .board { grid-template-columns: 1fr; }
+      .shape-card { min-height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>🕵️ Shape Detective</h1>
+        <div class="subtitle">Find shapes by using clues, definitions, and properties — not guessing.</div>
+      </div>
+      <div class="scorebar">
+        <div class="pill">⭐ Score: <span id="score">0</span></div>
+        <div class="pill">🔥 Streak: <span id="streak">0</span></div>
+        <div class="pill">🎯 Round: <span id="round">1</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="challenge-top">
+        <div>
+          <p id="prompt" class="prompt">Loading…</p>
+          <p id="instruction" class="instruction"></p>
+        </div>
+        <div id="modeTag" class="mode-tag">Detect</div>
+      </section>
+
+      <section id="propertyTools" class="side-card" style="display:none; margin-bottom: 14px;">
+        <strong>Detective tools</strong>
+        <div class="mini-def">Choose the property you used before submitting. This makes random guessing less useful.</div>
+        <div class="property-row" id="propertyChips"></div>
+      </section>
+
+      <section id="board" class="board"></section>
+
+      <section id="reasonPanel" class="reason-panel">
+        <div class="reason-title">Why is your answer correct?</div>
+        <div id="reasonOptions" class="reason-options"></div>
+      </section>
+
+      <section id="feedback" class="feedback">Choose carefully. Some rounds have more than one correct answer.</section>
+
+      <section class="actions">
+        <div>
+          <button id="submitBtn" class="primary">Submit answer</button>
+          <button id="nextBtn" class="secondary" disabled>Next case</button>
+        </div>
+        <button id="hintBtn" class="ghost">Need a clue?</button>
+      </section>
+    </main>
+
+    <aside>
+      <h2>Detective Notebook</h2>
+      <div class="side-card">
+        <strong>Progress</strong>
+        <div class="mini-def">Correct answers fill the case file. Guessing gives fewer points.</div>
+        <div class="meter"><div id="progressFill" class="meter-fill"></div></div>
+      </div>
+
+      <div class="shape-list" id="notebook"></div>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast">Take a closer look.</div>
+
+  <script>
+    const SHAPES = {
+      trapezoid: {
+        label: 'Trapezoid',
+        definition: 'A quadrilateral with exactly one pair of parallel sides.',
+        properties: ['one pair of parallel sides'],
+        reason: 'It has exactly one pair of parallel sides.'
+      },
+      parallelogram: {
+        label: 'Parallelogram',
+        definition: 'A quadrilateral with two pairs of parallel sides.',
+        properties: ['two pairs of parallel sides'],
+        reason: 'Opposite sides are parallel.'
+      },
+      rhombus: {
+        label: 'Rhombus',
+        definition: 'A quadrilateral where all sides are equal.',
+        properties: ['all sides equal', 'two pairs of parallel sides'],
+        reason: 'All four sides are equal.'
+      },
+      rectangle: {
+        label: 'Rectangle',
+        definition: 'A quadrilateral where all angles are right angles.',
+        properties: ['four right angles', 'two pairs of parallel sides'],
+        reason: 'It has four right angles.'
+      },
+      square: {
+        label: 'Square',
+        definition: 'A quadrilateral with all sides equal and all angles right angles.',
+        properties: ['all sides equal', 'four right angles', 'two pairs of parallel sides'],
+        reason: 'It has equal sides and four right angles.'
+      },
+      kite: {
+        label: 'Kite',
+        definition: 'A quadrilateral with two separate pairs of equal sides, and each pair has a shared vertex.',
+        properties: ['two adjacent equal side pairs'],
+        reason: 'It has two separate pairs of equal sides that meet at shared vertices.'
+      }
+    };
+
+    const MODES = [
+      'select_all',
+      'definition_to_shape',
+      'property_first',
+      'near_miss',
+      'single_shape'
+    ];
+
+    const state = {
+      score: 0,
+      streak: 0,
+      round: 1,
+      selectedIds: new Set(),
+      selectedReason: null,
+      selectedProperty: null,
+      submitted: false,
+      challenge: null,
+      firstTapAt: 0,
+      lastRoundStart: Date.now(),
+      rapidTapCount: 0
+    };
+
+    const els = {
+      board: document.getElementById('board'),
+      prompt: document.getElementById('prompt'),
+      instruction: document.getElementById('instruction'),
+      modeTag: document.getElementById('modeTag'),
+      feedback: document.getElementById('feedback'),
+      submitBtn: document.getElementById('submitBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      hintBtn: document.getElementById('hintBtn'),
+      score: document.getElementById('score'),
+      streak: document.getElementById('streak'),
+      round: document.getElementById('round'),
+      progressFill: document.getElementById('progressFill'),
+      notebook: document.getElementById('notebook'),
+      reasonPanel: document.getElementById('reasonPanel'),
+      reasonOptions: document.getElementById('reasonOptions'),
+      propertyTools: document.getElementById('propertyTools'),
+      propertyChips: document.getElementById('propertyChips'),
+      toast: document.getElementById('toast')
+    };
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+    function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+    function polygonPoints(type, variant = {}) {
+      const skinny = rand(-8, 8);
+      const skew = rand(-14, 14);
+      switch (type) {
+        case 'square': return [[-42,-42],[42,-42],[42,42],[-42,42]];
+        case 'rectangle': return [[-58,-32],[58,-32],[58,32],[-58,32]];
+        case 'rhombus': return [[0,-54],[58,0],[0,54],[-58,0]];
+        case 'parallelogram': return [[-54,-34],[48,-34],[65,34],[-37,34]];
+        case 'trapezoid': return [[-60,38],[60,38],[36,-38],[-35 + skinny,-38]];
+        case 'kite': return [[0,-62],[44,-8],[0,58],[-32,-8]];
+        case 'near_square': return [[-43,-42],[45,-38],[39,44],[-42,41]];
+        case 'near_rectangle': return [[-58,-32],[58,-26],[53,34],[-62,28]];
+        case 'near_kite': return [[0,-62],[48,-7],[0,58],[-44,-2]];
+        default: return [[-50,-40],[50,-40],[50,40],[-50,40]];
+      }
+    }
+
+    function drawShape(item) {
+      const rotation = item.rotation;
+      const pts = polygonPoints(item.drawType || item.type)
+        .map(([x, y]) => `${x},${y}`)
+        .join(' ');
+
+      const colors = ['#4f46e5', '#0891b2', '#7c3aed', '#0f766e', '#be123c', '#ca8a04'];
+      const fill = item.isNearMiss ? '#fff7ed' : '#eef2ff';
+      const stroke = item.isNearMiss ? '#f97316' : choice(colors);
+
+      return `
+        <svg width="136" height="124" viewBox="-80 -72 160 144" aria-hidden="true">
+          <g transform="rotate(${rotation}) scale(${item.scale})">
+            <polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="6" stroke-linejoin="round" />
+            ${item.showMarks ? propertyMarks(item.type) : ''}
+          </g>
+        </svg>
+      `;
+    }
+
+    function propertyMarks(type) {
+      if (['square', 'rectangle'].includes(type)) {
+        return '<path d="M-42 -42 h15 v15" fill="none" stroke="#111827" stroke-width="4"/><path d="M42 -42 h-15 v15" fill="none" stroke="#111827" stroke-width="4"/>';
+      }
+      if (['rhombus', 'square'].includes(type)) {
+        return '<circle cx="0" cy="-42" r="5" fill="#111827"/><circle cx="42" cy="0" r="5" fill="#111827"/><circle cx="0" cy="42" r="5" fill="#111827"/><circle cx="-42" cy="0" r="5" fill="#111827"/>';
+      }
+      return '';
+    }
+
+    function shapeItem(type, overrides = {}) {
+      return {
+        id: crypto.randomUUID(),
+        type,
+        drawType: type,
+        rotation: Math.floor(rand(0, 360)),
+        scale: rand(0.82, 1.08),
+        isNearMiss: false,
+        showMarks: false,
+        ...overrides
+      };
+    }
+
+    function generateChallenge() {
+      const mode = MODES[(state.round - 1) % MODES.length];
+      const allTypes = Object.keys(SHAPES);
+      const target = choice(allTypes);
+      let items = [];
+      let prompt = '';
+      let instruction = '';
+      let requiredProperty = null;
+      let correctIds = [];
+      let needsReason = false;
+
+      if (mode === 'select_all') {
+        const count = 6;
+        const targetCount = 2 + Math.floor(Math.random() * 2);
+        items = Array.from({ length: targetCount }, () => shapeItem(target));
+        const distractors = shuffle(allTypes.filter(t => t !== target)).slice(0, count - targetCount).map(t => shapeItem(t));
+        items = shuffle([...items, ...distractors]);
+        correctIds = items.filter(i => i.type === target).map(i => i.id);
+        prompt = `Tap ALL ${SHAPES[target].label}s`;
+        instruction = 'There may be more than one correct shape. Submit only after checking all cards.';
+      }
+
+      if (mode === 'definition_to_shape') {
+        const options = shuffle([target, ...shuffle(allTypes.filter(t => t !== target)).slice(0, 3)]);
+        items = options.map(t => shapeItem(t));
+        correctIds = items.filter(i => i.type === target).map(i => i.id);
+        prompt = `Which shape matches this definition?`;
+        instruction = SHAPES[target].definition;
+        needsReason = true;
+      }
+
+      if (mode === 'property_first') {
+        const propertyPool = ['all sides equal', 'four right angles', 'two pairs of parallel sides', 'one pair of parallel sides', 'two adjacent equal side pairs'];
+        requiredProperty = choice(propertyPool);
+        const matching = allTypes.filter(t => SHAPES[t].properties.includes(requiredProperty));
+        const targetTypes = shuffle(matching).slice(0, Math.min(3, matching.length));
+        const distractors = shuffle(allTypes.filter(t => !matching.includes(t))).slice(0, 6 - targetTypes.length);
+        items = shuffle([...targetTypes, ...distractors].map(t => shapeItem(t, { showMarks: Math.random() > 0.55 })));
+        correctIds = items.filter(i => SHAPES[i.type].properties.includes(requiredProperty)).map(i => i.id);
+        prompt = `Find shapes with: ${requiredProperty}`;
+        instruction = 'First choose the detective tool that matches the clue, then tap every matching shape.';
+      }
+
+      if (mode === 'near_miss') {
+        const realType = choice(['square', 'rectangle', 'kite']);
+        const nearMap = { square: 'near_square', rectangle: 'near_rectangle', kite: 'near_kite' };
+        items = [
+          shapeItem(realType),
+          shapeItem(realType, { drawType: nearMap[realType], isNearMiss: true }),
+          ...shuffle(allTypes.filter(t => t !== realType)).slice(0, 4).map(t => shapeItem(t))
+        ];
+        items = shuffle(items);
+        correctIds = items.filter(i => i.type === realType && !i.isNearMiss).map(i => i.id);
+        prompt = `Which one is a REAL ${SHAPES[realType].label}?`;
+        instruction = 'Be careful: one card is a near miss. It almost fits, but not exactly.';
+        needsReason = true;
+      }
+
+      if (mode === 'single_shape') {
+        items = shuffle([target, ...shuffle(allTypes.filter(t => t !== target)).slice(0, 5)]).map(t => shapeItem(t));
+        correctIds = items.filter(i => i.type === target).map(i => i.id);
+        prompt = `Find the ${SHAPES[target].label}`;
+        instruction = SHAPES[target].reason;
+        needsReason = true;
+      }
+
+      return { mode, target, items, prompt, instruction, correctIds, requiredProperty, needsReason };
+    }
+
+    function renderNotebook() {
+      els.notebook.innerHTML = Object.entries(SHAPES).map(([key, s]) => `
+        <div class="side-card">
+          <strong>${s.label}</strong>
+          <div class="mini-def">${s.definition}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderChallenge() {
+      state.challenge = generateChallenge();
+      state.selectedIds.clear();
+      state.selectedReason = null;
+      state.selectedProperty = null;
+      state.submitted = false;
+      state.lastRoundStart = Date.now();
+      state.rapidTapCount = 0;
+
+      const ch = state.challenge;
+      els.prompt.textContent = ch.prompt;
+      els.instruction.textContent = ch.instruction;
+      els.modeTag.textContent = modeLabel(ch.mode);
+      els.feedback.textContent = 'Look for the properties before tapping. Fast random tapping slows progress.';
+      els.feedback.className = 'feedback';
+      els.submitBtn.disabled = false;
+      els.nextBtn.disabled = true;
+      els.reasonPanel.classList.remove('visible');
+      els.reasonOptions.innerHTML = '';
+
+      renderPropertyTools(ch);
+
+      els.board.innerHTML = ch.items.map((item, idx) => `
+        <button class="shape-card" data-id="${item.id}" aria-label="shape option ${idx + 1}">
+          <span class="shape-label">Case ${idx + 1}</span>
+          ${drawShape(item)}
+        </button>
+      `).join('');
+
+      document.querySelectorAll('.shape-card').forEach(card => {
+        card.addEventListener('click', () => selectCard(card.dataset.id));
+      });
+
+      updateScoreUI();
+    }
+
+    function renderPropertyTools(ch) {
+      const show = ch.mode === 'property_first';
+      els.propertyTools.style.display = show ? 'block' : 'none';
+      if (!show) return;
+      const props = ['all sides equal', 'four right angles', 'two pairs of parallel sides', 'one pair of parallel sides', 'two adjacent equal side pairs'];
+      els.propertyChips.innerHTML = props.map(p => `<button class="property-chip" data-prop="${p}">${p}</button>`).join('');
+      document.querySelectorAll('.property-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          state.selectedProperty = chip.dataset.prop;
+          document.querySelectorAll('.property-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+        });
+      });
+    }
+
+    function modeLabel(mode) {
+      return {
+        select_all: 'Multi-select',
+        definition_to_shape: 'Definition',
+        property_first: 'Property-first',
+        near_miss: 'Near miss',
+        single_shape: 'Recognition'
+      }[mode];
+    }
+
+    function selectCard(id) {
+      if (state.submitted) return;
+      const now = Date.now();
+      if (now - state.lastRoundStart < 700) {
+        showToast('Pause. Look first, then tap.');
+        state.rapidTapCount++;
+        return;
+      }
+
+      if (state.firstTapAt && now - state.firstTapAt < 260) {
+        state.rapidTapCount++;
+        showToast('Detectives inspect before choosing.');
+      }
+      state.firstTapAt = now;
+
+      const allowsMulti = ['select_all', 'property_first'].includes(state.challenge.mode);
+      if (!allowsMulti) state.selectedIds.clear();
+
+      if (state.selectedIds.has(id)) state.selectedIds.delete(id);
+      else state.selectedIds.add(id);
+
+      document.querySelectorAll('.shape-card').forEach(card => {
+        card.classList.toggle('selected', state.selectedIds.has(card.dataset.id));
+      });
+    }
+
+    function submitAnswer() {
+      const ch = state.challenge;
+      if (state.selectedIds.size === 0) {
+        showFeedback('Choose at least one card first.', 'warn');
+        return;
+      }
+
+      if (ch.mode === 'property_first' && state.selectedProperty !== ch.requiredProperty) {
+        showFeedback('Use the matching detective tool first. Which property is the clue asking for?', 'warn');
+        return;
+      }
+
+      const elapsed = Date.now() - state.lastRoundStart;
+      if (elapsed < 1600 || state.rapidTapCount >= 2) {
+        showFeedback('That looked like a guess. Take one more look and explain the property before submitting.', 'warn');
+        state.rapidTapCount = 0;
+        return;
+      }
+
+      if (ch.needsReason && !state.selectedReason) {
+        showReasonStep();
+        return;
+      }
+
+      finalizeAnswer();
+    }
+
+    function showReasonStep() {
+      const correctItem = state.challenge.items.find(i => state.selectedIds.has(i.id));
+      const correctType = correctItem ? correctItem.type : state.challenge.target;
+      const options = shuffle([
+        SHAPES[correctType].reason,
+        'It only has three sides.',
+        'It has no corners.',
+        'It matches because of its color.'
+      ]);
+
+      els.reasonOptions.innerHTML = options.map(o => `<button class="reason-option" data-reason="${o}">${o}</button>`).join('');
+      els.reasonPanel.classList.add('visible');
+      showFeedback('Good. Now prove your answer by choosing the best reason.', 'warn');
+
+      document.querySelectorAll('.reason-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedReason = btn.dataset.reason;
+          document.querySelectorAll('.reason-option').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        });
+      });
+    }
+
+    function finalizeAnswer() {
+      const ch = state.challenge;
+      const selected = [...state.selectedIds].sort();
+      const correct = [...ch.correctIds].sort();
+      const isCorrect = selected.length === correct.length && selected.every((id, i) => id === correct[i]);
+      const reasonOk = !ch.needsReason || (state.selectedReason && selected.some(id => {
+        const item = ch.items.find(i => i.id === id);
+        return item && state.selectedReason === SHAPES[item.type].reason;
+      }));
+
+      state.submitted = true;
+      els.submitBtn.disabled = true;
+      els.nextBtn.disabled = false;
+
+      document.querySelectorAll('.shape-card').forEach(card => {
+        card.classList.add('locked');
+        if (ch.correctIds.includes(card.dataset.id)) card.classList.add('correct');
+        else if (state.selectedIds.has(card.dataset.id)) card.classList.add('wrong');
+      });
+
+      if (isCorrect && reasonOk) {
+        const bonus = state.rapidTapCount === 0 ? 10 : 6;
+        state.score += bonus;
+        state.streak += 1;
+        showFeedback(`Case solved! You used the definition, not guessing. +${bonus} stars`, 'good');
+      } else if (isCorrect && !reasonOk) {
+        state.score += 4;
+        state.streak = 0;
+        showFeedback('The shape choice was right, but the reason did not match. Partial credit.', 'warn');
+      } else {
+        state.score += 1;
+        state.streak = 0;
+        showFeedback(buildCorrection(ch), 'bad');
+      }
+
+      updateScoreUI();
+    }
+
+    function buildCorrection(ch) {
+      const names = ch.correctIds.map(id => {
+        const item = ch.items.find(i => i.id === id);
+        return item ? SHAPES[item.type].label : 'the correct shape';
+      });
+      return `Not solved yet. Correct answer: ${names.join(', ')}. Clue: ${ch.requiredProperty || SHAPES[ch.target].definition}`;
+    }
+
+    function hint() {
+      const ch = state.challenge;
+      const target = SHAPES[ch.target];
+      const hints = {
+        select_all: `Look for every card that matches: ${target.definition}`,
+        definition_to_shape: `Ignore color and rotation. Check the sides and angles only.`,
+        property_first: `The important property is: ${ch.requiredProperty}.`,
+        near_miss: `Near misses are almost right, but one side or angle breaks the definition.`,
+        single_shape: target.reason
+      };
+      showFeedback(hints[ch.mode], 'warn');
+    }
+
+    function showFeedback(text, kind) {
+      els.feedback.textContent = text;
+      els.feedback.className = `feedback ${kind || ''}`;
+    }
+
+    function showToast(text) {
+      els.toast.textContent = text;
+      els.toast.classList.add('visible');
+      setTimeout(() => els.toast.classList.remove('visible'), 1200);
+    }
+
+    function updateScoreUI() {
+      els.score.textContent = state.score;
+      els.streak.textContent = state.streak;
+      els.round.textContent = state.round;
+      els.progressFill.style.width = `${Math.min(100, state.score)}%`;
+    }
+
+    function nextRound() {
+      state.round += 1;
+      renderChallenge();
+    }
+
+    els.submitBtn.addEventListener('click', submitAnswer);
+    els.nextBtn.addEventListener('click', nextRound);
+    els.hintBtn.addEventListener('click', hint);
+
+    renderNotebook();
+    renderChallenge();
+  </script>
+</body>
+</html>

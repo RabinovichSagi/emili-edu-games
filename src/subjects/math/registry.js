@@ -1,7 +1,9 @@
-import { MathWordProblemsGame } from "./wordProblems/game.js";
+import { MathDistributiveLawGame } from "./distributiveLaw/game.js";
+import { MathProblemSolvingGame } from "./problemSolving/game.js";
 
 export const MathGames = {
-  word_problems: MathWordProblemsGame,
+  distributive_law: MathDistributiveLawGame,
+  problem_solving: MathProblemSolvingGame,
 };
 
 export function listMathGamesNewestFirst() {

@@ -3,6 +3,15 @@ import { formatDateTime, formatDurationMs } from "../core/time.js";
 import { isDue } from "../core/sr.js";
 import { listEnglishGamesNewestFirst } from "../subjects/english/registry.js";
 import { listMathGamesNewestFirst } from "../subjects/math/registry.js";
+import { listGeometryGamesNewestFirst } from "../subjects/geometry/registry.js";
+import { listTorahGamesNewestFirst } from "../subjects/torah/registry.js";
+
+const SubjectReports = [
+  { id: "english", titleHe: "אנגלית", listGames: listEnglishGamesNewestFirst },
+  { id: "math", titleHe: "חשבון", listGames: listMathGamesNewestFirst },
+  { id: "geometry", titleHe: "גיאומטריה", listGames: listGeometryGamesNewestFirst },
+  { id: "torah", titleHe: "תורה", listGames: listTorahGamesNewestFirst },
+];
 
 function pct(n) {
   if (!Number.isFinite(n)) return "—";
@@ -10,37 +19,9 @@ function pct(n) {
 }
 
 export function renderReports({ mount, store, router }) {
-  const profile = store.getProfile();
-  const games = [
-    ...listMathGamesNewestFirst().map((x) => ({ ...x, subject: "math" })),
-    ...listEnglishGamesNewestFirst().map((x) => ({ ...x, subject: "english" })),
-  ];
-  const gameCards = games.map(({ id, game, subject }) => {
-    const gs = profile.gameStats[id] || null;
-    const sr = (profile.sr && profile.sr[id]) || {};
-    const totalItems = Object.keys(sr).length;
-    let dueNow = 0;
-    for (const v of Object.values(sr)) if (isDue(v)) dueNow += 1;
-    const accuracy = gs ? (gs.correct + gs.wrong > 0 ? (gs.correct / (gs.correct + gs.wrong)) * 100 : null) : null;
-
-    return el("div", { class: "card" }, [
-      el("div", { class: "itemRow" }, [
-        el("div", {}, [
-          el("div", { class: "title", text: game.titleHe }),
-          el("div", { class: "sub", text: game.subtitleHe || "תרגול קצר וחכם" }),
-        ]),
-        el("button", { class: "btn", onClick: () => router.push({ subject, game: id }) }, ["לתרגל"]),
-      ]),
-      el("div", { class: "row", style: "margin-top:10px" }, [
-        kpi("מאסטרי", gs ? pct(gs.mastery) : "—"),
-        kpi("חזרה עכשיו", totalItems ? `${dueNow}/${totalItems}` : "—"),
-        kpi("דיוק", accuracy == null ? "—" : pct(accuracy)),
-        kpi("זמן תגובה", gs?.avgRtMs ? formatDurationMs(gs.avgRtMs) : "—"),
-        kpi("תרגול אחרון", gs?.lastPlayedAt ? formatDateTime(gs.lastPlayedAt) : "—"),
-        kpi("רצף הצלחות", bestStreak(sr)),
-      ]),
-    ]);
-  });
+  const gameCards = SubjectReports.flatMap((subject) =>
+    subject.listGames().map(({ id, game }) => renderGameCard({ subject, id, game, store, router }))
+  );
 
   mount.append(
     el("div", { class: "list" }, [
@@ -50,9 +31,7 @@ export function renderReports({ mount, store, router }) {
           el("div", { class: "sub", text: "תמונה כללית של תרגולים וזמני חזרה" }),
         ]),
       ]),
-      el("div", { class: "grid" }, [
-        ...gameCards,
-      ]),
+      el("div", { class: "grid" }, [...gameCards]),
       el("div", { class: "card" }, [
         el("div", { class: "itemRow" }, [
           el("div", {}, [
@@ -66,6 +45,35 @@ export function renderReports({ mount, store, router }) {
       ]),
     ])
   );
+}
+
+function renderGameCard({ subject, id, game, store, router }) {
+  const profile = store.getProfile();
+  const statsId = game.id || id;
+  const gs = profile.gameStats[statsId] || null;
+  const sr = (profile.sr && profile.sr[statsId]) || {};
+  const totalItems = Object.keys(sr).length;
+  let dueNow = 0;
+  for (const v of Object.values(sr)) if (isDue(v)) dueNow += 1;
+  const accuracy = gs ? (gs.correct + gs.wrong > 0 ? (gs.correct / (gs.correct + gs.wrong)) * 100 : null) : null;
+
+  return el("div", { class: "card" }, [
+    el("div", { class: "itemRow" }, [
+      el("div", {}, [
+        el("div", { class: "title", text: game.titleHe }),
+        el("div", { class: "sub", text: `${subject.titleHe} • ${game.subtitleHe || "תרגול קצר וחכם"}` }),
+      ]),
+      el("button", { class: "btn", onClick: () => router.push({ subject: subject.id, game: id }) }, ["לתרגל"]),
+    ]),
+    el("div", { class: "row", style: "margin-top:10px" }, [
+      kpi("מאסטרי", gs ? pct(gs.mastery) : "—"),
+      kpi("חזרה עכשיו", totalItems ? `${dueNow}/${totalItems}` : "—"),
+      kpi("דיוק", accuracy == null ? "—" : pct(accuracy)),
+      kpi("זמן תגובה", gs?.avgRtMs ? formatDurationMs(gs.avgRtMs) : "—"),
+      kpi("תרגול אחרון", gs?.lastPlayedAt ? formatDateTime(gs.lastPlayedAt) : "—"),
+      kpi("רצף הצלחות", bestStreak(sr)),
+    ]),
+  ]);
 }
 
 function kpi(k, v) {

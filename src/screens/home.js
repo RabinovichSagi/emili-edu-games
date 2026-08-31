@@ -10,23 +10,42 @@ export function renderHome({ mount, router }) {
         ]),
       ]),
       el("div", { class: "grid" }, [
-        el("div", { class: "card", style: "cursor:pointer;", onClick: () => router.push({ subject: "english" }), role: "button", tabindex: "0" }, [
-          el("div", { class: "itemRow" }, [
-            el("div", {}, [
-              el("div", { class: "title", text: "אנגלית" }),
-              el("div", { class: "sub", text: "אותיות, קריאה, ועוד" }),
-            ]),
-          ]),
-        ]),
-        el("div", { class: "card", style: "cursor:pointer;", onClick: () => router.push({ subject: "math" }), role: "button", tabindex: "0" }, [
-          el("div", { class: "itemRow" }, [
-            el("div", {}, [
-              el("div", { class: "title", text: "חשבון" }),
-              el("div", { class: "sub", text: "בעיות מילוליות ותרגול מספרים" }),
-            ]),
-          ]),
-        ]),
+        subjectCard({
+          title: "אנגלית",
+          subtitle: "אותיות, קריאה, ועוד",
+          emoji: "🔤",
+          onClick: () => router.push({ subject: "english" }),
+        }),
+        subjectCard({
+          title: "גיאומטריה",
+          subtitle: "צורות, תכונות, וחשיבה מרחבית",
+          emoji: "📐",
+          onClick: () => router.push({ subject: "geometry" }),
+        }),
+        subjectCard({
+          title: "חשבון",
+          subtitle: "כפל, פירוק מספרים, ועוד",
+          emoji: "🧮",
+          onClick: () => router.push({ subject: "math" }),
+        }),
+        subjectCard({
+          title: "תורה",
+          subtitle: "פרשת שבוע, סיפורים, וסדר אירועים",
+          emoji: "📜",
+          onClick: () => router.push({ subject: "torah" }),
+        }),
       ]),
     ])
   );
+}
+
+function subjectCard({ title, subtitle, emoji, onClick }) {
+  return el("div", { class: "card", style: "cursor:pointer;", onClick, role: "button", tabindex: "0" }, [
+    el("div", { class: "itemRow" }, [
+      el("div", {}, [
+        el("div", { class: "title", text: `${emoji} ${title}` }),
+        el("div", { class: "sub", text: subtitle }),
+      ]),
+    ]),
+  ]);
 }

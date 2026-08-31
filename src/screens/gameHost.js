@@ -1,6 +1,8 @@
 import { el } from "../ui/dom.js";
 import { EnglishGames } from "../subjects/english/registry.js";
 import { MathGames } from "../subjects/math/registry.js";
+import { GeometryGames } from "../subjects/geometry/registry.js";
+import { TorahGames } from "../subjects/torah/registry.js";
 
 const registry = {
   english: {
@@ -8,6 +10,12 @@ const registry = {
   },
   math: {
     ...MathGames,
+  },
+  geometry: {
+    ...GeometryGames,
+  },
+  torah: {
+    ...TorahGames,
   },
 };
 
@@ -28,5 +36,5 @@ export function renderGame({ mount, store, router, screen }) {
     );
     return;
   }
-  game.render({ mount, store, router, screen });
+  game.render({ mount, store, router, subject: screen.subject, screen });
 }

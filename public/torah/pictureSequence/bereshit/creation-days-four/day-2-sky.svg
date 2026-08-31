@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
+  <title id="title">יום שני: רקיע ושמים</title>
+  <desc id="desc">איור עדין של שמים כחולים המפרידים בין מים עליונים ותחתונים.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dff8ff"/><stop offset="0.48" stop-color="#9ee4ff"/><stop offset="1" stop-color="#78cfff"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7dd8ff"/><stop offset="1" stop-color="#b3f0ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="620" rx="46" fill="url(#bg)"/>
+  <path d="M0 91c78 35 150 35 216 2 72-35 145-33 218 3 75 38 149 35 221-1 81-41 161-33 245 10V0H0z" fill="#f4fdff" opacity="0.84"/>
+  <path d="M0 402c92-47 177-47 255 0 72 43 152 45 240 5 90-41 176-34 258 21 48 32 98 42 147 32v160H0z" fill="url(#water)"/>
+  <path d="M0 474c84-35 164-34 241 4 71 35 149 36 233 4 105-40 194-32 266 18 50 35 104 45 160 30" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" opacity="0.72"/>
+  <g fill="#ffffff" opacity="0.93">
+    <ellipse cx="174" cy="242" rx="75" ry="31"/><ellipse cx="235" cy="238" rx="54" ry="25"/><ellipse cx="125" cy="251" rx="46" ry="22"/>
+    <ellipse cx="640" cy="199" rx="82" ry="34"/><ellipse cx="704" cy="198" rx="54" ry="24"/><ellipse cx="586" cy="209" rx="44" ry="21"/>
+  </g>
+  <path d="M107 350c117-83 236-90 357-20 108 62 213 55 315-23" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" opacity="0.62"/>
+</svg>

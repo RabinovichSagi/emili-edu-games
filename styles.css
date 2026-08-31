@@ -111,14 +111,6 @@ body{
   font-weight:600;
   min-height: 44px;
 }
-.pill select{
-  min-height:44px;
-  border-radius:999px;
-  border:1px solid rgba(31,36,48,.12);
-  background:rgba(255,255,255,.8);
-  padding:8px 10px;
-  font-weight:800;
-}
 
 .grid{
   display:grid;
@@ -293,7 +285,10 @@ body{
   bottom: 16px;
   background: rgba(31,36,48,.92);
   color: white;
-  padding: 10px 14px;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
   border-radius: 14px;
   font-weight: 800;
   max-width: min(680px, calc(100% - 24px));
@@ -304,8 +299,24 @@ body{
 }
 .toast.on{
   opacity: 1;
+  pointer-events:auto;
   transform: translateX(-50%) translateY(-2px);
 }
+.toastText{
+  flex: 1;
+}
+.toastClose{
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  color: white;
+  font-size: 24px;
+  line-height: 1;
+  cursor:pointer;
+}
+.toastClose:active{ transform: translateY(1px); }
 
 .kpi{
   display:flex;
@@ -410,29 +421,303 @@ body{
   .kbKey{ min-height: 62px; font-size: 22px; }
 }
 
-/* Math word problems */
-.mathProblemCard{
+/* Math: distributive law game */
+.mathThemeRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.mathTheme{
+  min-width: 64px;
+  min-height: 58px;
+  border-radius: 18px;
+  border: 1px solid rgba(31,36,48,.10);
+  background: rgba(255,255,255,.82);
+  font-size: 30px;
+  cursor:pointer;
+  transition: transform .08s ease, outline .12s ease;
+}
+.mathTheme:active{ transform: translateY(1px) scale(.99); }
+.mathTheme.active{ outline: 4px solid rgba(124,108,255,.26); background: rgba(124,108,255,.10); }
+
+.mathGridCard{
+  overflow:hidden;
+}
+.mathAreaGrid{
+  --cell: clamp(9px, calc((100vw - 92px) / var(--cols)), 26px);
+  --split-gap: clamp(12px, 3.6vw, 30px);
+  direction:ltr;
+  display:grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-auto-rows: var(--cell);
+  justify-content:center;
+  gap: 1px;
+  margin: 14px auto 8px;
+  padding: 10px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,.82), rgba(243,251,255,.88));
+  border: 1px solid rgba(31,36,48,.10);
+  max-width: 100%;
+  overflow:auto hidden;
+  transition: gap .24s ease, transform .24s ease, padding .24s ease;
+  touch-action: manipulation;
+}
+.mathAreaGrid.separated{
+  gap: 3px;
+  padding-inline-end: calc(10px + var(--split-gap));
+  transform: scale(.985);
+}
+.mathAreaGrid.recombined,
+.mathAreaGrid.complete{
+  outline: 4px solid rgba(46,204,113,.22);
+}
+.mathAreaGrid.wrongSplit{
+  outline: 4px solid rgba(255,92,122,.18);
+  animation: wrongWiggle .45s ease-in-out both;
+}
+.mathCell{
+  width: var(--cell);
+  height: var(--cell);
+  min-width: var(--cell);
+  min-height: var(--cell);
+  border: 0;
+  border-radius: 4px;
+  padding:0;
+  background: rgba(124,108,255,.08);
+  font-size: clamp(7px, calc(var(--cell) * .72), 17px);
+  line-height: 1;
+  cursor:pointer;
+  transition: transform .24s ease, background .16s ease, box-shadow .16s ease;
+}
+.mathCell.left{ background: rgba(124,108,255,.18); }
+.mathCell.right{ background: rgba(255,126,182,.18); }
+.mathCell.tensGuide{ box-shadow: inset -2px 0 0 rgba(31,36,48,.18); }
+.mathCell.splitEdge{ box-shadow: inset -4px 0 0 rgba(255,176,32,.82); }
+.mathCell.splitRight{ transform: translateX(var(--split-gap)); }
+.mathHint{
+  text-align:center;
+  color: var(--muted);
+  font-weight: 800;
+  margin-top: 8px;
+}
+.mathSplitLabels{
+  display:flex;
+  justify-content:center;
+  gap: 18px;
+  margin-top: 10px;
+  direction:ltr;
+}
+.mathSplitLabels > div{
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  border: 1px solid rgba(31,36,48,.10);
+  background: rgba(255,255,255,.78);
+}
+.mathSplitLabels .neutral{ color: var(--ink); background: rgba(255,255,255,.78); }
+.mathSplitLabels .good{ color: #167a44; background: rgba(46,204,113,.14); }
+.mathSplitLabels .bad{ color: #ad2740; background: rgba(255,92,122,.14); }
+
+.mathEquationCard.locked{
+  opacity: .72;
+}
+.mathEquation{
+  direction:ltr;
   display:flex;
   flex-direction:column;
-  gap: 18px;
-}
-.mathStory{
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 1.5;
-  text-align:center;
-}
-.answerInput{
-  width: min(220px, 100%);
-  min-height: 56px;
-  border-radius: 18px;
-  border: 1px solid rgba(31,36,48,.16);
-  background: rgba(255,255,255,.9);
-  padding: 10px 14px;
-  text-align:center;
-  font-size: 24px;
+  align-items:center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: clamp(22px, 4vw, 34px);
   font-weight: 900;
 }
+.mathEquationLine{
+  direction:ltr;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  flex-wrap:wrap;
+}
+.mathBlank{
+  min-width: 58px;
+  min-height: 48px;
+  border-radius: 16px;
+  border: 2px dashed rgba(124,108,255,.35);
+  background: rgba(255,255,255,.86);
+  font: inherit;
+  color: var(--accent);
+  cursor:pointer;
+}
+.mathBlank.filled{
+  border-style: solid;
+  border-color: rgba(124,108,255,.28);
+  color: var(--ink);
+  background: rgba(255,255,255,.92);
+}
+.mathBlank.filled.checked{
+  border-color: rgba(46,204,113,.42);
+  color: #167a44;
+  background: rgba(46,204,113,.12);
+  animation: correctPop .18s ease-out both;
+}
+.mathBlank.bad{
+  border-color: rgba(255,92,122,.72);
+  color: var(--bad);
+  background: rgba(255,92,122,.12);
+  animation: wrongWiggle .42s ease-in-out both;
+}
+.mathCards{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap: 10px;
+  margin-top: 12px;
+  direction:ltr;
+}
+.mathNumberCard{
+  min-width: 64px;
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid rgba(31,36,48,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,251,.92));
+  font-size: 22px;
+  font-weight: 900;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(24, 32, 56, .08);
+}
+.mathNumberCard:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+.mathEquationCard .btn[disabled]{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.mathNumberCard:active{ transform: translateY(1px); }
+
+@media (min-width: 760px){
+  .mathAreaGrid{ --cell: clamp(11px, calc(850px / var(--cols)), 25px); }
+}
+.mathBlank.active{
+  border-style: solid;
+  border-color: rgba(255,176,32,.78);
+  box-shadow: 0 0 0 5px rgba(255,176,32,.16);
+}
+
+/* Math word problem game */
+.problemCard{
+  background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(235,244,255,.86));
+}
+.problemText{
+  font-size: clamp(22px, 4vw, 34px);
+  line-height: 1.55;
+  font-weight: 850;
+  margin: 18px 0 12px;
+}
+.problemHint,
+.problemSolved{
+  border-radius: 18px;
+  padding: 12px 14px;
+  font-weight: 800;
+  margin-top: 10px;
+}
+.problemHint{
+  background: rgba(255, 209, 102, .20);
+  border: 1px solid rgba(255, 176, 32, .22);
+  color: #6f4a00;
+}
+.problemSolved{
+  background: rgba(46, 204, 113, .16);
+  border: 1px solid rgba(46, 204, 113, .25);
+  color: #176b3a;
+}
+.problemAnswerCard{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  align-items:stretch;
+}
+.problemAnswerLabel{
+  font-weight: 900;
+  color: var(--muted);
+}
+.problemAnswerBox{
+  min-height: 76px;
+  border-radius: 22px;
+  border: 2px solid rgba(122, 162, 255, .35);
+  background: rgba(255,255,255,.9);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 42px;
+  font-weight: 950;
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+.problemNumpad{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.problemNumKey{
+  min-height: 68px;
+  border-radius: 18px;
+  border: 1px solid rgba(31,36,48,.10);
+  background: rgba(255,255,255,.86);
+  font-size: 28px;
+  font-weight: 950;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(31,36,48,.07);
+  transition: transform .08s ease, filter .12s ease;
+}
+.problemNumKey:active{ transform: translateY(1px); filter: brightness(.98); }
+.problemNumKey:disabled{ opacity:.45; cursor:not-allowed; }
+.problemNumKey.muted{
+  font-size: 20px;
+  color: var(--muted);
+  background: rgba(255,255,255,.62);
+}
+.problemCheckBtn{
+  justify-content:center;
+  margin-top: 2px;
+}
+.problemPatternChips{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.problemPatternGrid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+@media (min-width: 760px){
+  .problemPatternGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.problemPatternToggle{
+  text-align:right;
+  border-radius: 18px;
+  border: 1px solid rgba(31,36,48,.10);
+  background: rgba(255,255,255,.72);
+  padding: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 5px;
+  cursor:pointer;
+}
+.problemPatternToggle.active{
+  border-color: rgba(122, 162, 255, .45);
+  background: rgba(235,244,255,.96);
+  outline: 3px solid rgba(122, 162, 255, .12);
+}
+.problemPatternToggle strong{ font-size: 16px; }
+.problemPatternToggle span{ color: var(--muted); font-size: 13px; font-weight: 700; }
+
+/* Printable math word-problems worksheet */
 .worksheetWrap{
   width:100%;
 }
@@ -571,4 +856,149 @@ body{
     margin-top: 5mm;
     padding-top: 3mm;
   }
+}
+
+/* Torah: picture sequence game */
+.torahHero{
+  background:
+    radial-gradient(520px 240px at 18% 0%, rgba(255,211,110,.28), transparent 62%),
+    radial-gradient(520px 260px at 88% 20%, rgba(142,224,141,.24), transparent 58%),
+    rgba(255,255,255,.78);
+}
+.parashaGrid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.parashaBtn{
+  text-align:right;
+  border: 1px solid rgba(31,36,48,.10);
+  background: rgba(255,255,255,.82);
+  border-radius: 20px;
+  min-height: 74px;
+  padding: 12px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap: 5px;
+  transition: transform .08s ease, outline .12s ease, background .12s ease;
+}
+.parashaBtn:active{ transform: translateY(1px); }
+.parashaBtn.active{
+  outline: 4px solid rgba(124,108,255,.24);
+  background: rgba(124,108,255,.10);
+}
+.parashaBtn strong{ font-size: 18px; }
+.parashaBtn span{ color: var(--muted); font-weight: 700; }
+.sequenceGame{ --seq-accent: rgba(124,108,255,.26); }
+.feedbackCard{
+  border-radius: 20px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(31,36,48,.10);
+  color: var(--muted);
+  font-weight: 900;
+}
+.feedbackCard.needsWork{
+  background: rgba(255,176,32,.14);
+  border-color: rgba(255,176,32,.24);
+  color: #7a5520;
+}
+.sequenceSlots{
+  direction: rtl;
+  display:grid;
+  grid-template-columns: repeat(var(--sequence-count), minmax(128px, 1fr));
+  gap: 10px;
+  overflow-x:auto;
+  padding-bottom: 4px;
+}
+.sequenceSlot{
+  min-width: 128px;
+  min-height: 190px;
+  border: 2px dashed rgba(124,108,255,.24);
+  background: rgba(255,255,255,.56);
+  border-radius: 24px;
+  padding: 9px;
+  cursor:pointer;
+  position:relative;
+  touch-action: manipulation;
+}
+.sequenceSlot.wrong{
+  border-color: rgba(255,92,122,.58);
+  background: rgba(255,92,122,.09);
+  animation: wrongWiggle .45s ease-in-out both;
+}
+.slotNumber{
+  position:absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  z-index:1;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(31,36,48,.72);
+  color:white;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 900;
+}
+.emptySlot{
+  height: 100%;
+  min-height: 156px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: var(--muted);
+  font-weight: 900;
+}
+.sequenceTray{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+.sequenceCard{
+  border-radius: 22px;
+  background: rgba(255,255,255,.88);
+  border: 1px solid rgba(31,36,48,.10);
+  box-shadow: 0 10px 22px rgba(24,32,56,.10);
+  overflow:hidden;
+  cursor:pointer;
+  transition: transform .08s ease, outline .12s ease, filter .12s ease;
+}
+.sequenceCard:active{ transform: translateY(1px) scale(.992); }
+.sequenceCard.selected{ outline: 4px solid var(--seq-accent); }
+.sequenceCard.inSlot{
+  cursor:inherit;
+  box-shadow:none;
+  height:100%;
+}
+.sequenceCard img{
+  display:block;
+  width:100%;
+  aspect-ratio: 1.3 / 1;
+  object-fit:cover;
+  background: #fff;
+}
+.sequenceCardTitle{
+  padding: 8px 10px 10px;
+  font-weight: 900;
+  text-align:center;
+}
+@media (max-width: 620px){
+  .sequenceSlots{ grid-template-columns: repeat(var(--sequence-count), minmax(116px, 1fr)); }
+  .sequenceSlot{ min-width:116px; min-height:174px; }
+  .sequenceCardTitle{ font-size: 14px; }
+}
+.torahHero .title,
+.card > .title{
+  font-weight: 900;
+  font-size: 18px;
+}
+.card > .sub,
+.torahHero .sub{
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
 }
