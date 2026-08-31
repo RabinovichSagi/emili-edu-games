@@ -2,6 +2,7 @@ import { el } from "../ui/dom.js";
 import { formatDateTime, formatDurationMs } from "../core/time.js";
 import { isDue } from "../core/sr.js";
 import { listEnglishGamesNewestFirst } from "../subjects/english/registry.js";
+import { listMathGamesNewestFirst } from "../subjects/math/registry.js";
 
 function pct(n) {
   if (!Number.isFinite(n)) return "—";
@@ -10,7 +11,11 @@ function pct(n) {
 
 export function renderReports({ mount, store, router }) {
   const profile = store.getProfile();
-  const gameCards = listEnglishGamesNewestFirst().map(({ id, game }) => {
+  const games = [
+    ...listMathGamesNewestFirst().map((x) => ({ ...x, subject: "math" })),
+    ...listEnglishGamesNewestFirst().map((x) => ({ ...x, subject: "english" })),
+  ];
+  const gameCards = games.map(({ id, game, subject }) => {
     const gs = profile.gameStats[id] || null;
     const sr = (profile.sr && profile.sr[id]) || {};
     const totalItems = Object.keys(sr).length;
@@ -24,7 +29,7 @@ export function renderReports({ mount, store, router }) {
           el("div", { class: "title", text: game.titleHe }),
           el("div", { class: "sub", text: game.subtitleHe || "תרגול קצר וחכם" }),
         ]),
-        el("button", { class: "btn", onClick: () => router.push({ subject: "english", game: id }) }, ["לתרגל"]),
+        el("button", { class: "btn", onClick: () => router.push({ subject, game: id }) }, ["לתרגל"]),
       ]),
       el("div", { class: "row", style: "margin-top:10px" }, [
         kpi("מאסטרי", gs ? pct(gs.mastery) : "—"),

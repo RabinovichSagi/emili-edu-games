@@ -18,6 +18,14 @@ export function renderHome({ mount, router }) {
             ]),
           ]),
         ]),
+        el("div", { class: "card", style: "cursor:pointer;", onClick: () => router.push({ subject: "math" }), role: "button", tabindex: "0" }, [
+          el("div", { class: "itemRow" }, [
+            el("div", {}, [
+              el("div", { class: "title", text: "חשבון" }),
+              el("div", { class: "sub", text: "בעיות מילוליות ותרגול מספרים" }),
+            ]),
+          ]),
+        ]),
       ]),
     ])
   );

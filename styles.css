@@ -111,6 +111,14 @@ body{
   font-weight:600;
   min-height: 44px;
 }
+.pill select{
+  min-height:44px;
+  border-radius:999px;
+  border:1px solid rgba(31,36,48,.12);
+  background:rgba(255,255,255,.8);
+  padding:8px 10px;
+  font-weight:800;
+}
 
 .grid{
   display:grid;
@@ -400,4 +408,167 @@ body{
 @media (min-width: 720px){
   .typingSlot{ width: 46px; height: 50px; font-size: 26px; }
   .kbKey{ min-height: 62px; font-size: 22px; }
+}
+
+/* Math word problems */
+.mathProblemCard{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+.mathStory{
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align:center;
+}
+.answerInput{
+  width: min(220px, 100%);
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid rgba(31,36,48,.16);
+  background: rgba(255,255,255,.9);
+  padding: 10px 14px;
+  text-align:center;
+  font-size: 24px;
+  font-weight: 900;
+}
+.worksheetWrap{
+  width:100%;
+}
+.worksheetPage{
+  background:#fff;
+  color:#111;
+  border:1px solid rgba(17,17,17,.18);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.10);
+  padding: 18mm 16mm;
+  max-width: 210mm;
+  min-height: 280mm;
+  margin: 0 auto;
+  direction: rtl;
+}
+.worksheetHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap: 12px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 8mm;
+  margin-bottom: 7mm;
+}
+.worksheetHeader h2{
+  margin:0 0 4mm;
+  font-size: 24px;
+}
+.worksheetHeader p{
+  margin:0;
+  font-weight:700;
+}
+.worksheetBadge{
+  border:1px solid #111;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.worksheetProblems{
+  margin:0;
+  padding-right: 7mm;
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 5mm;
+}
+.worksheetProblems li{
+  break-inside: avoid;
+  padding-right: 2mm;
+}
+.worksheetStory{
+  font-size: 14px;
+  line-height: 1.38;
+  font-weight: 700;
+}
+.worksheetWork{
+  margin-top: 3mm;
+  font-size: 14px;
+  direction:ltr;
+  unicode-bidi:isolate;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap: 5mm;
+  text-align:left;
+  width:100%;
+  font-weight: 700;
+}
+.worksheetLine,
+.worksheetAnswerLine{
+  display:inline-block;
+  border-bottom: 1px solid #111;
+  height: 7mm;
+}
+.worksheetLine{
+  width: 45mm;
+}
+.worksheetAnswerLine{
+  width: 28mm;
+}
+.worksheetFooter{
+  margin-top: 8mm;
+  border-top: 1px solid #111;
+  padding-top: 4mm;
+  font-weight: 800;
+  text-align:center;
+}
+
+@page{
+  size: A4;
+  margin: 10mm;
+}
+@media print{
+  *{
+    box-shadow:none !important;
+    text-shadow:none !important;
+  }
+  html,
+  body{
+    background:#fff !important;
+  }
+  .topbar,
+  .noPrint,
+  .toast{
+    display:none !important;
+  }
+  .app{
+    max-width:none;
+    padding:0;
+    display:block;
+  }
+  .card:has(.worksheetWrap){
+    background:transparent !important;
+    border:0 !important;
+    border-radius:0 !important;
+    padding:0 !important;
+    backdrop-filter:none !important;
+  }
+  .worksheetPage{
+    border:0 !important;
+    box-shadow:none !important;
+    border-radius:0 !important;
+    max-width:none !important;
+    min-height:auto !important;
+    padding:0 !important;
+    overflow:visible !important;
+  }
+  .worksheetHeader{
+    padding-bottom: 6mm;
+    margin-bottom: 5mm;
+  }
+  .worksheetProblems{
+    gap: 4mm;
+  }
+  .worksheetFooter{
+    margin-top: 5mm;
+    padding-top: 3mm;
+  }
 }
